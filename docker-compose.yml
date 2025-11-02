@@ -1,72 +1,39 @@
-version: '3.8'
-
 services:
-  servico:
-    build:
-      context: ./codigo-fonte/servico
-      dockerfile: Dockerfile
-    container_name: sistema-votacao-servico
-    restart: unless-stopped
-    working_dir: /var/www
-    volumes:
-      - ./codigo-fonte/servico:/var/www
-    networks:
-      - sistema-votacao
-    depends_on:
-      - sqlserver
-
-  cliente:
+  websrt:
+    container_name: websrt
     build:
       context: ./codigo-fonte/cliente
       dockerfile: Dockerfile
-    container_name: sistema-votacao-cliente
-    restart: unless-stopped
-    working_dir: /app
+      args:
+        - WWW_DATA_USER=1001
+        - WWW_DATA_GROUP=1001
+        - ENVIRONMENT=${APP_ENV}
+    expose:
+      - "80"
+      - "443"
     volumes:
-      - ./codigo-fonte/cliente:/app
-      - /app/node_modules
+      - ./codigo-fonte/cliente:/var/www/html
     ports:
-      - "3000:3000"
+      - "8088:80"
     networks:
-      - sistema-votacao
-    environment:
-      - VITE_API_URL=http://localhost:8000/api
-    depends_on:
-      - servico
-
-  nginx:
-    image: nginx:alpine
-    container_name: sistema-votacao-nginx
-    restart: unless-stopped
+      - srt-network
+  phpsrt:
+    container_name: phpsrt
+    build:
+      context: ./codigo-fonte/servico
+      dockerfile: Dockerfile
     ports:
-      - "8000:80"
+      - "8090:80"
+    expose:
+      - "9000"
+    env_file:
+      - ./codigo-fonte/servico/.env
     volumes:
-      - ./codigo-fonte/servico:/var/www
-      - ./codigo-fonte/servico/docker/nginx:/etc/nginx/conf.d
+      - ./codigo-fonte/servico:/var/www/html
     networks:
-      - sistema-votacao
-    depends_on:
-      - servico
-
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: sistema-votacao-sqlserver
-    restart: unless-stopped
-    environment:
-      ACCEPT_EULA: "Y"
-      SA_PASSWORD: "SistemaVotacao@2024"
-      MSSQL_PID: "Express"
-    ports:
-      - "1433:1433"
-    volumes:
-      - sqlserver-data:/var/opt/mssql
-    networks:
-      - sistema-votacao
+      - srt-network
 
 networks:
-  sistema-votacao:
+  srt-network:
     driver: bridge
 
-volumes:
-  sqlserver-data:
-    driver: local

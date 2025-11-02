@@ -1,0 +1,8 @@
+include:
+  - project: shared/pipelines/workloads-cicd
+    ref: "main"
+    file:
+      - main.yml
+variables:
+  BUILD_DIR_BACKEND: "codigo-fonte/servico"
+  BUILD_DIR_FRONTEND: "codigo-fonte/cliente"
