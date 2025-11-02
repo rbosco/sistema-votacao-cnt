@@ -44,6 +44,10 @@ class PropostaController extends Controller
         $request->validate([
             'numero' => 'nullable|string|max:255',
             'nome' => 'required|string|max:255',
+        ], [
+            'nome.required' => 'O nome da proposta é obrigatório.',
+            'nome.max' => 'O nome não pode ter mais de :max caracteres.',
+            'numero.max' => 'O número não pode ter mais de :max caracteres.',
         ]);
 
         $proposta = Proposta::create([
@@ -63,6 +67,10 @@ class PropostaController extends Controller
         $request->validate([
             'numero' => 'nullable|string|max:255',
             'nome' => 'required|string|max:255',
+        ], [
+            'nome.required' => 'O nome da proposta é obrigatório.',
+            'nome.max' => 'O nome não pode ter mais de :max caracteres.',
+            'numero.max' => 'O número não pode ter mais de :max caracteres.',
         ]);
 
         $proposta = Proposta::findOrFail($id);

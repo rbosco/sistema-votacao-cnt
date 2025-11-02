@@ -15,45 +15,54 @@ class VotoController extends Controller
     public function votar(Request $request)
     {
         $request->validate([
-            'cpf' => 'required|string|size:11',
-            'nome' => 'required|string|max:255',
+            'cpf_votante' => 'required|string|size:11',
+            'nome_votante' => 'required|string|max:255',
             'nome_sindicato' => 'required|string|max:255',
-            'voto' => 'required|boolean',
+            'voto' => 'required|in:a_favor,contra',
+            'proposta_id' => 'required|exists:propostas,id',
+        ], [
+            'cpf_votante.required' => 'O CPF é obrigatório.',
+            'cpf_votante.size' => 'O CPF deve ter 11 dígitos.',
+            'nome_votante.required' => 'O nome do votante é obrigatório.',
+            'nome_sindicato.required' => 'O nome do sindicato é obrigatório.',
+            'voto.required' => 'O voto é obrigatório.',
+            'voto.in' => 'O voto deve ser "a_favor" ou "contra".',
+            'proposta_id.required' => 'A proposta é obrigatória.',
+            'proposta_id.exists' => 'A proposta selecionada não existe.',
         ]);
 
-        // Verificar se existe uma proposta ativa
-        $proposta = Proposta::ativa()->first();
+        // Verificar se a proposta está ativa
+        $proposta = Proposta::find($request->proposta_id);
 
-        if (!$proposta) {
+        if (!$proposta || !$proposta->esta_ativa) {
             return response()->json([
-                'mensagem' => 'Votação encerrada.',
-                'status' => 'encerrada'
+                'message' => 'Votação encerrada.',
             ], 422);
         }
 
         // Verificar se o CPF já votou nesta proposta
         $votoExistente = Voto::where('proposta_id', $proposta->id)
-            ->where('cpf_votante', $request->cpf)
+            ->where('cpf_votante', $request->cpf_votante)
             ->first();
 
         if ($votoExistente) {
             throw ValidationException::withMessages([
-                'cpf' => ['Você já votou nesta proposta.'],
+                'cpf_votante' => ['Você já votou nesta proposta.'],
             ]);
         }
 
         // Registrar o voto
         $voto = Voto::create([
             'proposta_id' => $proposta->id,
-            'cpf_votante' => $request->cpf,
-            'nome_votante' => $request->nome,
+            'cpf_votante' => $request->cpf_votante,
+            'nome_votante' => $request->nome_votante,
             'nome_sindicato' => $request->nome_sindicato,
             'voto' => $request->voto,
             'votado_em' => now(),
         ]);
 
         return response()->json([
-            'mensagem' => 'Voto registrado com sucesso!',
+            'message' => 'Voto registrado com sucesso!',
             'voto' => $voto,
         ], 201);
     }

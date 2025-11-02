@@ -17,6 +17,10 @@ class AutenticacaoController extends Controller
         $request->validate([
             'cpf' => 'required|string|size:11',
             'senha' => 'required|string',
+        ], [
+            'cpf.required' => 'O CPF é obrigatório.',
+            'cpf.size' => 'O CPF deve ter 11 dígitos.',
+            'senha.required' => 'A senha é obrigatória.',
         ]);
 
         $usuario = Usuario::where('cpf', $request->cpf)->first();

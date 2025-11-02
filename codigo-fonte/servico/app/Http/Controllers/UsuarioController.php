@@ -27,6 +27,14 @@ class UsuarioController extends Controller
             'cpf' => 'required|string|size:11|unique:usuarios',
             'senha' => 'required|string|min:6',
             'is_admin' => 'boolean',
+        ], [
+            'nome.required' => 'O nome é obrigatório.',
+            'nome.max' => 'O nome não pode ter mais de :max caracteres.',
+            'cpf.required' => 'O CPF é obrigatório.',
+            'cpf.size' => 'O CPF deve ter 11 dígitos.',
+            'cpf.unique' => 'Este CPF já está cadastrado.',
+            'senha.required' => 'A senha é obrigatória.',
+            'senha.min' => 'A senha deve ter no mínimo :min caracteres.',
         ]);
 
         $usuario = Usuario::create([
@@ -60,6 +68,13 @@ class UsuarioController extends Controller
             'cpf' => 'required|string|size:11|unique:usuarios,cpf,' . $id,
             'senha' => 'nullable|string|min:6',
             'is_admin' => 'boolean',
+        ], [
+            'nome.required' => 'O nome é obrigatório.',
+            'nome.max' => 'O nome não pode ter mais de :max caracteres.',
+            'cpf.required' => 'O CPF é obrigatório.',
+            'cpf.size' => 'O CPF deve ter 11 dígitos.',
+            'cpf.unique' => 'Este CPF já está cadastrado.',
+            'senha.min' => 'A senha deve ter no mínimo :min caracteres.',
         ]);
 
         $dados = [
