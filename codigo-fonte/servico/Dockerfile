@@ -91,7 +91,7 @@ RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cac
 # -----------------------------------------------------
 # Entrypoint customizado (opcional)
 # -----------------------------------------------------
-COPY docker/entrypoint.sh /entrypoint.sh
+COPY docker_mte/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 EXPOSE 80
