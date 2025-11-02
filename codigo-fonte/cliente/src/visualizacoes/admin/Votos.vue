@@ -128,7 +128,7 @@ onMounted(async () => {
 
 async function carregarPropostas() {
   try {
-    const response = await api.get('/api/admin/propostas')
+    const response = await api.get('/propostas')
     propostas.value = response.data
   } catch (err) {
     console.error('Erro ao carregar propostas:', err)
@@ -141,7 +141,7 @@ async function carregarVotos() {
       ? { proposta_id: propostaFiltro.value }
       : {}
 
-    const response = await api.get('/api/admin/votos', { params })
+    const response = await api.get('/votos', { params })
     votos.value = response.data
   } catch (err) {
     console.error('Erro ao carregar votos:', err)

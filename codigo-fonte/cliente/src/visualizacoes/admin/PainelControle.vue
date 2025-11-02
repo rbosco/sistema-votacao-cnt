@@ -84,7 +84,7 @@ const estatisticas = ref({
 
 onMounted(async () => {
   try {
-    const response = await api.get('/api/admin/estatisticas')
+    const response = await api.get('/estatisticas')
     estatisticas.value = response.data
   } catch (err) {
     console.error('Erro ao carregar estatísticas:', err)

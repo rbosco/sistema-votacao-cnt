@@ -34,26 +34,6 @@
           </div>
 
           <div class="form-group">
-            <label for="nome">Nome Completo:</label>
-            <input
-              v-model="formulario.nome_votante"
-              type="text"
-              id="nome"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="sindicato">Sindicato:</label>
-            <input
-              v-model="formulario.nome_sindicato"
-              type="text"
-              id="sindicato"
-              required
-            />
-          </div>
-
-          <div class="form-group">
             <label>Seu Voto:</label>
             <div class="radio-group">
               <label>
@@ -104,7 +84,8 @@ const formulario = ref({
 
 onMounted(async () => {
   try {
-    const response = await api.get('/api/propostas/ativa')
+    const response = await api.get('/propostas/ativa')
+    console.log(response.data);
     proposta.value = response.data
   } catch (err: any) {
     erro.value = err.response?.data?.message || 'Erro ao carregar proposta'
@@ -120,7 +101,7 @@ async function enviarVoto() {
   mensagem.value = ''
 
   try {
-    await api.post('/api/votar', {
+    await api.post('/votar', {
       ...formulario.value,
       proposta_id: proposta.value.id
     })

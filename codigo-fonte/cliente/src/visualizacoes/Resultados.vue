@@ -75,7 +75,7 @@ function calcularPercentual(tipo: string) {
 onMounted(async () => {
   try {
     const idCriptografado = route.params.idCriptografado
-    const response = await api.get(`/api/resultados/${idCriptografado}`)
+    const response = await api.get(`/resultados/${idCriptografado}`)
     proposta.value = response.data.proposta
     resultados.value = response.data.resultados
   } catch (err: any) {

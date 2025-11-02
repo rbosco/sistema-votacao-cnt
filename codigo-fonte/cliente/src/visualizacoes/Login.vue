@@ -67,7 +67,7 @@ async function fazerLogin() {
   try {
     await armazenamentoAuth.entrar({
       cpf: formulario.value.cpf,
-      password: formulario.value.senha
+      senha: formulario.value.senha
     })
 
     router.push('/admin')

@@ -108,7 +108,7 @@ onMounted(carregarPropostas)
 
 async function carregarPropostas() {
   try {
-    const response = await api.get('/api/admin/propostas')
+    const response = await api.get('/propostas')
     propostas.value = response.data
   } catch (err) {
     console.error('Erro ao carregar propostas:', err)
@@ -124,9 +124,9 @@ function editar(proposta: any) {
 async function salvarProposta() {
   try {
     if (editando.value) {
-      await api.put(`/api/admin/propostas/${formulario.value.id}`, formulario.value)
+      await api.put(`/propostas/${formulario.value.id}`, formulario.value)
     } else {
-      await api.post('/api/admin/propostas', formulario.value)
+      await api.post('/propostas', formulario.value)
     }
     await carregarPropostas()
     fecharFormulario()
@@ -139,7 +139,7 @@ async function excluir(id: number) {
   if (!confirm('Deseja realmente excluir esta proposta?')) return
 
   try {
-    await api.delete(`/api/admin/propostas/${id}`)
+    await api.delete(`/propostas/${id}`)
     await carregarPropostas()
   } catch (err) {
     console.error('Erro ao excluir proposta:', err)

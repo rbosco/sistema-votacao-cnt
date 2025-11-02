@@ -115,7 +115,7 @@ onMounted(carregarUsuarios)
 
 async function carregarUsuarios() {
   try {
-    const response = await api.get('/api/admin/usuarios')
+    const response = await api.get('/usuarios')
     usuarios.value = response.data
   } catch (err) {
     console.error('Erro ao carregar usuários:', err)
@@ -136,9 +136,9 @@ async function salvarUsuario() {
     }
 
     if (editando.value) {
-      await api.put(`/api/admin/usuarios/${dados.id}`, dados)
+      await api.put(`/usuarios/${dados.id}`, dados)
     } else {
-      await api.post('/api/admin/usuarios', dados)
+      await api.post('/usuarios', dados)
     }
 
     await carregarUsuarios()
@@ -152,7 +152,7 @@ async function excluir(id: number) {
   if (!confirm('Deseja realmente excluir este usuário?')) return
 
   try {
-    await api.delete(`/api/admin/usuarios/${id}`)
+    await api.delete(`/usuarios/${id}`)
     await carregarUsuarios()
   } catch (err) {
     console.error('Erro ao excluir usuário:', err)
