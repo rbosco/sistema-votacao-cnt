@@ -4,6 +4,7 @@ FROM php:8.2-fpm
 RUN apt-get update && apt-get install -y \
     git \
     curl \
+    ca-certificates \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
@@ -11,12 +12,13 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     gnupg \
+    lsb-release \
     apt-transport-https \
     && rm -rf /var/lib/apt/lists/*
 
 # Instalar drivers do SQL Server
-RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
-    && curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg \
+    && curl -fsSL https://packages.microsoft.com/config/debian/12/prod.list | tee /etc/apt/sources.list.d/mssql-release.list \
     && apt-get update \
     && ACCEPT_EULA=Y apt-get install -y msodbcsql18 mssql-tools18 unixodbc-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -34,7 +36,8 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Instalar Node.js e NPM
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
-    && npm install -g npm@latest
+    && npm install -g npm@latest \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Configurar diretório de trabalho
 WORKDIR /var/www
