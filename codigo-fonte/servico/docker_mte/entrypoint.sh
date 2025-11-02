@@ -1,60 +1,102 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
-echo "=========================================="
-echo "Sistema de Votacao CNT - Iniciando..."
-echo "=========================================="
+echo "🚀 Iniciando container do serviço..."
 
-# Criar diretorios necessarios
-echo "[1/7] Criando diretorios..."
-mkdir -p storage/framework/cache/data \
-         storage/framework/sessions \
-         storage/framework/views \
-         storage/logs \
-         bootstrap/cache
+APP_ENV="${APP_ENV:-local}"
+APP_DEBUG="${APP_DEBUG:-false}"
+APP_DIR="/var/www/html"
 
-chmod -R 775 storage bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache
+echo "🌍 Ambiente: ${APP_ENV}"
+cd "$APP_DIR"
 
-# Configurar .env
-echo "[2/7] Configurando .env..."
+# 1. Composer
+if [ ! -d "vendor" ]; then
+    echo "📦 Instalando dependências do Composer..."
+    composer install --no-interaction --prefer-dist --optimize-autoloader
+else
+    echo "✅ Dependências do Composer já instaladas"
+fi
+
+# 2. .env por ambiente
 if [ ! -f ".env" ]; then
-    cp .env.example .env
+    echo "📝 Configurando arquivo .env para ambiente: ${APP_ENV}"
+
+    case "$APP_ENV" in
+        development|dev)
+            if [ -f ".env.dev.example" ]; then
+                cp .env.dev.example .env
+                echo "✅ Usando .env.dev.example"
+            else
+                cp .env.example .env
+                echo "⚠️  .env.dev.example não encontrado, usando .env.example"
+            fi
+            ;;
+        production|prod)
+            if [ -f ".env.prod.example" ]; then
+                cp .env.prod.example .env
+                echo "✅ Usando .env.prod.example"
+            else
+                cp .env.example .env
+                echo "⚠️  .env.prod.example não encontrado, usando .env.example"
+            fi
+            ;;
+        *)
+            cp .env.example .env
+            echo "✅ Usando configurações LOCAL/DOCKER (.env.example)"
+            ;;
+    esac
 fi
 
-# Gerar APP_KEY
-echo "[3/7] Gerando APP_KEY..."
-if ! grep -q "APP_KEY=base64:" .env 2>/dev/null; then
+# 3. APP_KEY
+if ! grep -q "^APP_KEY=base64:" .env; then
+    echo "🔑 Gerando chave da aplicação..."
     php artisan key:generate --force
+else
+    echo "✅ Chave da aplicação já existe"
 fi
 
-# Migrations (tentar, mas nao falhar se der erro)
-echo "[4/7] Executando migrations..."
-php artisan migrate --force 2>&1 || echo "   AVISO: Migrations falharam (banco pode nao estar acessivel)"
-
-# Limpar cache
-echo "[5/7] Limpando cache..."
-php artisan config:clear 2>/dev/null || true
-php artisan cache:clear 2>/dev/null || true
-php artisan route:clear 2>/dev/null || true
-php artisan view:clear 2>/dev/null || true
-
-# Otimizar para producao
-echo "[6/7] Otimizando aplicacao..."
-if [ "${APP_DEBUG}" != "true" ]; then
-    php artisan config:cache 2>/dev/null || true
-    php artisan route:cache 2>/dev/null || true
-    php artisan view:cache 2>/dev/null || true
+# 4. Esperar DB (simples) – evita o "Login failed..." logo na subida
+if [ -n "$DB_HOST" ]; then
+    echo "⏳ Aguardando banco ($DB_HOST:$DB_PORT) ficar pronto..."
+    DB_PORT="${DB_PORT:-1433}"
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        nc -z "$DB_HOST" "$DB_PORT" >/dev/null 2>&1 && break
+        echo "  ...tentando conectar ($i/10)"
+        sleep 3
+    done
 fi
 
-# Criar log file
-touch storage/logs/laravel.log 2>/dev/null || true
-chmod 666 storage/logs/laravel.log 2>/dev/null || true
+# 5. Migrations (mas sem derrubar o container se falhar)
+echo "🔄 Executando migrations..."
+if ! php artisan migrate --force; then
+    echo "⚠️  Não foi possível rodar migrations agora. Container vai subir mesmo assim."
+fi
 
-echo "[7/7] Iniciando Apache..."
-echo "=========================================="
-echo "Sistema pronto! Escutando na porta 80"
-echo "=========================================="
+# 6. NÃO usar tinker no entrypoint – muito pesado
+# Se quiser semear sempre em dev:
+if [ "$APP_ENV" = "local" ] || [ "$APP_ENV" = "development" ] || [ "$APP_ENV" = "dev" ]; then
+    echo "🌱 Executando seeders (ambiente dev)..."
+    php artisan db:seed --force || echo "⚠️  Seeder falhou, seguindo..."
+else
+    echo "⏭️  Ambiente de produção - seeders não serão executados automaticamente"
+fi
 
-# Iniciar Apache
+# 7. Limpa caches
+echo "🧹 Limpando cache..."
+php artisan config:clear || true
+php artisan route:clear || true
+php artisan view:clear || true
+
+# 8. Otimiza se não estiver em debug
+if [ "$APP_DEBUG" != "true" ] && [ "$APP_DEBUG" != "1" ]; then
+    echo "⚡ Otimizando aplicação para produção..."
+    php artisan config:cache || true
+    php artisan route:cache || true
+fi
+
+echo "✅ Container do serviço configurado com sucesso!"
+echo "🛠  Iniciando Apache (imagem php:8.3-apache-*)..."
+
+# 9. IMPORTANTE: imagem apache -> apache2-foreground
 exec apache2-foreground

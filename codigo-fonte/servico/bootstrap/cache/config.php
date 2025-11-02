@@ -113,7 +113,7 @@
       array (
         'driver' => 'local',
         'root' => '/var/www/html/storage/app/public',
-        'url' => 'http://desenvolvimento.cnt.org.br/storage',
+        'url' => 'http://localhost:8000/storage',
         'visibility' => 'public',
         'throw' => false,
         'report' => false,
@@ -152,7 +152,7 @@
         'username' => NULL,
         'password' => NULL,
         'timeout' => NULL,
-        'local_domain' => 'desenvolvimento.cnt.org.br',
+        'local_domain' => 'localhost',
       ),
       'ses' => 
       array (
@@ -201,7 +201,7 @@
     ),
     'from' => 
     array (
-      'address' => 'noreply@cnt.org.br',
+      'address' => 'hello@example.com',
       'name' => 'Sistema de Votação CNT',
     ),
     'markdown' => 
@@ -454,9 +454,9 @@
   'app' => 
   array (
     'name' => 'Sistema de Votação CNT',
-    'env' => 'production',
+    'env' => 'local',
     'debug' => true,
-    'url' => 'http://desenvolvimento.cnt.org.br',
+    'url' => 'http://localhost:8000',
     'frontend_url' => 'http://localhost:3000',
     'asset_url' => NULL,
     'timezone' => 'America/Sao_Paulo',
@@ -464,7 +464,7 @@
     'fallback_locale' => 'en',
     'faker_locale' => 'pt_BR',
     'cipher' => 'AES-256-CBC',
-    'key' => '',
+    'key' => 'base64:fOh+NGNWNt2cUFimGH4nBbaBR42gdxerM+E0SaHmcWw=',
     'previous_keys' => 
     array (
     ),
@@ -650,11 +650,11 @@
       array (
         'driver' => 'mysql',
         'url' => NULL,
-        'host' => '10.246.62.183',
+        'host' => '10.244.62.136',
         'port' => '1433',
         'database' => 'DBFSRTCNT',
         'username' => 'sistema.srtcnt',
-        'password' => '',
+        'password' => 'KPrGr3czKsqxznpYBwnKhmv5',
         'unix_socket' => '',
         'charset' => 'utf8mb4',
         'collation' => 'utf8mb4_unicode_ci',
@@ -670,11 +670,11 @@
       array (
         'driver' => 'mariadb',
         'url' => NULL,
-        'host' => '10.246.62.183',
+        'host' => '10.244.62.136',
         'port' => '1433',
         'database' => 'DBFSRTCNT',
         'username' => 'sistema.srtcnt',
-        'password' => '',
+        'password' => 'KPrGr3czKsqxznpYBwnKhmv5',
         'unix_socket' => '',
         'charset' => 'utf8mb4',
         'collation' => 'utf8mb4_unicode_ci',
@@ -690,11 +690,11 @@
       array (
         'driver' => 'pgsql',
         'url' => NULL,
-        'host' => '10.246.62.183',
+        'host' => '10.244.62.136',
         'port' => '1433',
         'database' => 'DBFSRTCNT',
         'username' => 'sistema.srtcnt',
-        'password' => '',
+        'password' => 'KPrGr3czKsqxznpYBwnKhmv5',
         'charset' => 'utf8',
         'prefix' => '',
         'prefix_indexes' => true,
@@ -705,11 +705,11 @@
       array (
         'driver' => 'sqlsrv',
         'url' => NULL,
-        'host' => '10.246.62.183',
+        'host' => '10.244.62.136',
         'port' => '1433',
         'database' => 'DBFSRTCNT',
         'username' => 'sistema.srtcnt',
-        'password' => '',
+        'password' => 'KPrGr3czKsqxznpYBwnKhmv5',
         'charset' => 'utf8',
         'prefix' => '',
         'prefix_indexes' => true,
@@ -755,7 +755,7 @@
       2 => '127.0.0.1',
       3 => '127.0.0.1:8000',
       4 => '::1',
-      5 => 'desenvolvimento.cnt.org.br',
+      5 => 'localhost:8000',
     ),
     'guard' => 
     array (
