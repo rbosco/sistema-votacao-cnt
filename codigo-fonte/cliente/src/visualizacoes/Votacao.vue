@@ -22,7 +22,7 @@
 
         <form @submit.prevent="enviarVoto" class="form-voto">
           <div class="form-group">
-            <label for="cpf">CPF do Votante:</label>
+            <label for="cpf">CPF</label>
             <input
               v-model="formulario.cpf_votante"
               type="text"
