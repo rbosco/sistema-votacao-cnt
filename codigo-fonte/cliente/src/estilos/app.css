@@ -250,7 +250,21 @@ body {
   background-color: var(--gray-5);
 }
 
-/* Modal */
+/* Modal - Overlay e Centralização */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--spacing-4);
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -265,13 +279,15 @@ body {
   padding: var(--spacing-4);
 }
 
-.modal {
+.modal-content {
   background-color: var(--white);
   border-radius: var(--border-radius-md);
   max-width: 500px;
   width: 100%;
   padding: var(--spacing-6);
   box-shadow: var(--shadow-lg);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .modal-header {
