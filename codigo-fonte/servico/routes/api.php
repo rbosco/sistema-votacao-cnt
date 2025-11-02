@@ -6,6 +6,12 @@ use App\Http\Controllers\AutenticacaoController;
 use App\Http\Controllers\PropostaController;
 use App\Http\Controllers\VotoController;
 use App\Http\Controllers\UsuarioController;
+use App\Http\Controllers\HealthController;
+
+// Rotas de Health Check (públicas)
+Route::get('/health', [HealthController::class, 'index']);
+Route::get('/health/database', [HealthController::class, 'database']);
+Route::get('/health/database/tables', [HealthController::class, 'databaseTables']);
 
 Route::post('/entrar', [AutenticacaoController::class, 'entrar']);
 Route::post('/votar', [VotoController::class, 'votar']);
