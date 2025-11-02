@@ -1,0 +1,30 @@
+# Garantir line endings Unix (LF) em todos os scripts
+*.sh text eol=lf
+docker-entrypoint.sh text eol=lf
+entrypoint.sh text eol=lf
+
+# Arquivos de configuração
+*.conf text eol=lf
+*.ini text eol=lf
+.env* text eol=lf
+
+# Código fonte
+*.php text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.vue text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+
+# Arquivos binários
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
