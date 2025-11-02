@@ -34,19 +34,23 @@
 
           <div class="form-group">
             <label>Seu Voto:</label>
-            <div class="radio-group">
-              <label>
-                <input type="radio" v-model="formulario.voto" value="a_favor" required />
-                <span>A Favor</span>
-              </label>
-              <label>
-                <input type="radio" v-model="formulario.voto" value="contra" required />
-                <span>Contra</span>
-              </label>
-              <label>
-                <input type="radio" v-model="formulario.voto" value="abstencao" required />
-                <span>Abstenção</span>
-              </label>
+            <div class="botoes-voto">
+              <button
+                type="button"
+                @click="formulario.voto = 'a_favor'"
+                :class="['btn-voto', 'btn-sim', { ativo: formulario.voto === 'a_favor' }]"
+              >
+                <span class="icone">👍</span>
+                <span class="texto">Sim</span>
+              </button>
+              <button
+                type="button"
+                @click="formulario.voto = 'contra'"
+                :class="['btn-voto', 'btn-nao', { ativo: formulario.voto === 'contra' }]"
+              >
+                <span class="icone">👎</span>
+                <span class="texto">Não</span>
+              </button>
             </div>
           </div>
 
@@ -185,16 +189,68 @@ async function enviarVoto() {
   font-size: 1rem;
 }
 
-.radio-group {
+.botoes-voto {
   display: flex;
   gap: 1.5rem;
+  justify-content: center;
 }
 
-.radio-group label {
+.btn-voto {
+  flex: 1;
+  max-width: 200px;
+  padding: 1.5rem 2rem;
+  border: 3px solid transparent;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  cursor: pointer;
+  background: white;
+}
+
+.btn-voto .icone {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.btn-voto .texto {
+  font-size: 1.2rem;
+}
+
+.btn-sim {
+  border-color: #d1d5db;
+  color: #6b7280;
+}
+
+.btn-sim:hover {
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+
+.btn-sim.ativo {
+  border-color: #22c55e;
+  background: #22c55e;
+  color: white;
+}
+
+.btn-nao {
+  border-color: #d1d5db;
+  color: #6b7280;
+}
+
+.btn-nao:hover {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.btn-nao.ativo {
+  border-color: #ef4444;
+  background: #ef4444;
+  color: white;
 }
 
 .btn-submit {
