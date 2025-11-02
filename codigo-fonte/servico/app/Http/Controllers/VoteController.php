@@ -15,9 +15,7 @@ class VoteController extends Controller
     public function vote(Request $request)
     {
         $request->validate([
-            'cpf' => 'required|string|size:11',
-            'name' => 'required|string|max:255',
-            'union_name' => 'required|string|max:255',
+            'cpf_votante' => 'required|string|size:11',
             'vote' => 'required|boolean',
         ]);
 
@@ -33,21 +31,19 @@ class VoteController extends Controller
 
         // Verifica se o CPF já votou nesta proposta
         $existingVote = Vote::where('proposal_id', $proposal->id)
-            ->where('voter_cpf', $request->cpf)
+            ->where('voter_cpf', $request->cpf_votante)
             ->first();
 
         if ($existingVote) {
             throw ValidationException::withMessages([
-                'cpf' => ['Você já votou nesta proposta.'],
+                'cpf_votante' => ['Você já votou nesta proposta.'],
             ]);
         }
 
         // Registra o voto
         $vote = Vote::create([
             'proposal_id' => $proposal->id,
-            'voter_cpf' => $request->cpf,
-            'voter_name' => $request->name,
-            'union_name' => $request->union_name,
+            'voter_cpf' => $request->cpf_votante,
             'vote' => $request->vote,
             'voted_at' => now(),
         ]);
