@@ -22,15 +22,6 @@ services:
       - "8090:80"
     expose:
       - "9000"
-    environment:
-      - APP_ENV=${APP_ENV:-production}
-      - APP_KEY=${APP_KEY:-}
-      - DB_CONNECTION=sqlsrv
-      - DB_HOST=${DB_HOST:-10.246.62.183}
-      - DB_PORT=${DB_PORT:-1433}
-      - DB_DATABASE=${DB_DATABASE:-DBFSRTCNT}
-      - DB_USERNAME=${DB_USERNAME:-sistema.srtcnt}
-      - DB_PASSWORD=${DB_PASSWORD:-}
     volumes:
       - ./codigo-fonte/servico:/var/www/html
       - vendor-data:/var/www/html/vendor

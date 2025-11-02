@@ -20,26 +20,6 @@ chown -R www-data:www-data storage bootstrap/cache
 echo "[2/7] Configurando .env..."
 if [ ! -f ".env" ]; then
     cp .env.example .env
-
-    # Aplicar variaveis de ambiente do docker-compose
-    if [ -n "${DB_HOST}" ]; then
-        sed -i "s|DB_HOST=.*|DB_HOST=${DB_HOST}|" .env
-    fi
-    if [ -n "${DB_PORT}" ]; then
-        sed -i "s|DB_PORT=.*|DB_PORT=${DB_PORT}|" .env
-    fi
-    if [ -n "${DB_DATABASE}" ]; then
-        sed -i "s|DB_DATABASE=.*|DB_DATABASE=${DB_DATABASE}|" .env
-    fi
-    if [ -n "${DB_USERNAME}" ]; then
-        sed -i "s|DB_USERNAME=.*|DB_USERNAME=${DB_USERNAME}|" .env
-    fi
-    if [ -n "${DB_PASSWORD}" ]; then
-        sed -i "s|DB_PASSWORD=.*|DB_PASSWORD=${DB_PASSWORD}|" .env
-    fi
-    if [ -n "${APP_ENV}" ]; then
-        sed -i "s|APP_ENV=.*|APP_ENV=${APP_ENV}|" .env
-    fi
 fi
 
 # Gerar APP_KEY
