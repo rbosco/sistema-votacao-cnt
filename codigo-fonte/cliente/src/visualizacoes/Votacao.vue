@@ -33,7 +33,6 @@
           </div>
 
           <div class="form-group">
-            <label>Seu Voto:</label>
             <div class="botoes-voto">
               <button
                 type="button"
