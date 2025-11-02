@@ -5,12 +5,18 @@ services:
       context: ./codigo-fonte/cliente
       dockerfile: Dockerfile
     expose:
-      - "80"
+      - "8088"
     ports:
-      - "8088:80"
+      - "8088:8088"
+    volumes:
+      - ./codigo-fonte/cliente:/app
+      - /app/node_modules
     networks:
       - srt-network
     restart: unless-stopped
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
 
   phpsrt:
     container_name: phpsrt

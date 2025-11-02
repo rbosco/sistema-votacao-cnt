@@ -1,26 +1,18 @@
-# ========== Build ==========
-FROM node:20-alpine AS build
+FROM node:20-alpine
+
 WORKDIR /app
 
-# Copia só manifests para aproveitar cache
+# Copiar arquivos de configuração para cache de dependências
 COPY package.json package-lock.json ./
+
+# Instalar dependências
 RUN npm ci --no-audit --no-fund
 
-# Copia o restante do projeto
+# Copiar código-fonte
 COPY . .
 
-# Build de produção
-RUN npm run build
+# Expor porta do Vite dev server
+EXPOSE 8088
 
-# ========== Runtime ==========
-FROM nginx:alpine
-
-# Copia artefatos estáticos
-COPY --from=build /app/dist /usr/share/nginx/html
-
-# SPA history mode
-RUN rm /etc/nginx/conf.d/default.conf
-COPY infra/nginx/web.conf /etc/nginx/conf.d/default.conf
-
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+# Comando para iniciar servidor de desenvolvimento
+CMD ["npm", "run", "dev"]
