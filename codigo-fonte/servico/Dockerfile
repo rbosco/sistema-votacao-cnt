@@ -80,6 +80,16 @@ WORKDIR /var/www/html
 COPY . /var/www/html
 
 # -----------------------------------------------------
+# Cria diretórios necessários do Laravel
+# -----------------------------------------------------
+RUN mkdir -p storage/framework/cache/data \
+    && mkdir -p storage/framework/sessions \
+    && mkdir -p storage/framework/views \
+    && mkdir -p storage/logs \
+    && mkdir -p bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
+# -----------------------------------------------------
 # Prepara .env temporário para build (necessário para composer)
 # -----------------------------------------------------
 RUN cp .env.example .env \
@@ -91,8 +101,10 @@ RUN cp .env.example .env \
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader \
     && php artisan key:generate --force
 
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-  && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+# -----------------------------------------------------
+# Configura permissões finais
+# -----------------------------------------------------
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 
 # -----------------------------------------------------
