@@ -1,8 +1,7 @@
 <template>
   <div class="votacao-container">
     <header class="header">
-      <h1>Sistema de Votação CNT</h1>
-      <p>Vote nas propostas ativas</p>
+      <img src="/images/banner-cnt.png" alt="Sistema de Votação CNT" class="banner" />
     </header>
 
     <main class="main-content">
@@ -134,12 +133,14 @@ async function enviarVoto() {
 .header {
   background: #1351b4;
   color: white;
-  padding: 2rem;
+  padding: 0;
   text-align: center;
 }
 
-.header h1 {
-  margin: 0 0 0.5rem 0;
+.header .banner {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
 .main-content {
