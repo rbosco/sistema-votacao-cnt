@@ -108,10 +108,10 @@ RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cac
 
 
 # -----------------------------------------------------
-# Entrypoint customizado (opcional)
+# Entrypoint customizado
 # -----------------------------------------------------
-COPY docker_mte/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 80
-CMD [ "sh", "-c", "/entrypoint.sh && apache2-foreground" ]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
