@@ -64,4 +64,4 @@ RUN chown -R www-data:www-data /var/www \
 # Expor porta 9000
 EXPOSE 9000
 
-ENTRYPOINT ["entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
