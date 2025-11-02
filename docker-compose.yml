@@ -1,19 +1,38 @@
 version: '3.8'
 
 services:
-  app:
+  servico:
     build:
-      context: .
+      context: ./codigo-fonte/servico
       dockerfile: Dockerfile
-    container_name: sistema-votacao-app
+    container_name: sistema-votacao-servico
     restart: unless-stopped
     working_dir: /var/www
     volumes:
-      - ./:/var/www
+      - ./codigo-fonte/servico:/var/www
     networks:
       - sistema-votacao
     depends_on:
       - sqlserver
+
+  cliente:
+    build:
+      context: ./codigo-fonte/cliente
+      dockerfile: Dockerfile
+    container_name: sistema-votacao-cliente
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./codigo-fonte/cliente:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    networks:
+      - sistema-votacao
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+    depends_on:
+      - servico
 
   nginx:
     image: nginx:alpine
@@ -22,12 +41,12 @@ services:
     ports:
       - "8000:80"
     volumes:
-      - ./:/var/www
-      - ./docker/nginx:/etc/nginx/conf.d
+      - ./codigo-fonte/servico:/var/www
+      - ./codigo-fonte/servico/docker/nginx:/etc/nginx/conf.d
     networks:
       - sistema-votacao
     depends_on:
-      - app
+      - servico
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
