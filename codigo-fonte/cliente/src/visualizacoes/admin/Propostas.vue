@@ -28,11 +28,11 @@
           <form @submit.prevent="salvarProposta" class="form">
             <div class="form-group">
               <label>Número:</label>
-              <input v-model="formulario.numero" type="number" required />
+              <input v-model="formulario.numero" type="text" />
             </div>
 
             <div class="form-group">
-              <label>Nome:</label>
+              <label>Nome*:</label>
               <input v-model="formulario.nome" type="text" required />
             </div>
 
