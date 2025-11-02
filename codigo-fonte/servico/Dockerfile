@@ -80,9 +80,16 @@ WORKDIR /var/www/html
 COPY . /var/www/html
 
 # -----------------------------------------------------
+# Prepara .env temporário para build (necessário para composer)
+# -----------------------------------------------------
+RUN cp .env.example .env \
+    && sed -i 's/APP_KEY=/APP_KEY=base64:TempKeyForDockerBuildOnly1234567890ABCDEF=/' .env
+
+# -----------------------------------------------------
 # Instala dependências Laravel
 # -----------------------------------------------------
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader \
+    && php artisan key:generate --force
 
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
   && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
