@@ -39,8 +39,19 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
 # Configurar diretório de trabalho
 WORKDIR /var/www
 
+# Copiar entrypoint
+COPY entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 # Copiar arquivos do projeto
 COPY . /var/www
+
+# Criar diretórios necessários
+RUN mkdir -p storage/framework/cache/data \
+    && mkdir -p storage/framework/sessions \
+    && mkdir -p storage/framework/views \
+    && mkdir -p storage/logs \
+    && mkdir -p bootstrap/cache
 
 # Configurar permissões
 RUN chown -R www-data:www-data /var/www \
@@ -50,4 +61,4 @@ RUN chown -R www-data:www-data /var/www \
 # Expor porta 9000
 EXPOSE 9000
 
-CMD ["php-fpm"]
+ENTRYPOINT ["entrypoint.sh"]
