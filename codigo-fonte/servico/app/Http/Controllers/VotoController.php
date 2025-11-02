@@ -16,15 +16,11 @@ class VotoController extends Controller
     {
         $request->validate([
             'cpf_votante' => 'required|string|size:11',
-            'nome_votante' => 'required|string|max:255',
-            'nome_sindicato' => 'required|string|max:255',
             'voto' => 'required|in:a_favor,contra',
             'proposta_id' => 'required|exists:propostas,id',
         ], [
             'cpf_votante.required' => 'O CPF é obrigatório.',
             'cpf_votante.size' => 'O CPF deve ter 11 dígitos.',
-            'nome_votante.required' => 'O nome do votante é obrigatório.',
-            'nome_sindicato.required' => 'O nome do sindicato é obrigatório.',
             'voto.required' => 'O voto é obrigatório.',
             'voto.in' => 'O voto deve ser "a_favor" ou "contra".',
             'proposta_id.required' => 'A proposta é obrigatória.',
