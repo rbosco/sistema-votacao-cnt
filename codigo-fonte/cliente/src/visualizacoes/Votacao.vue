@@ -25,10 +25,12 @@
             <label for="cpf">CPF</label>
             <input
               v-model="formulario.cpf_votante"
+              @input="aplicarMascaraCPF"
               type="text"
               id="cpf"
               required
               placeholder="000.000.000-00"
+              maxlength="14"
             />
           </div>
 
@@ -69,6 +71,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import api from '@/servicos/api'
+import { aplicarMascaraCPF as aplicarMascara, removerFormatacaoCPF } from '@/utilidades/formatadores'
 
 const proposta = ref<any>(null)
 const carregando = ref(true)
@@ -83,6 +86,12 @@ const formulario = ref({
   nome_sindicato: '',
   voto: ''
 })
+
+function aplicarMascaraCPF(event: Event) {
+  aplicarMascara(event)
+  // Atualiza o v-model com o valor formatado
+  formulario.value.cpf_votante = (event.target as HTMLInputElement).value
+}
 
 onMounted(async () => {
   try {
@@ -105,6 +114,7 @@ async function enviarVoto() {
   try {
     await api.post('/votar', {
       ...formulario.value,
+      cpf_votante: removerFormatacaoCPF(formulario.value.cpf_votante),
       proposta_id: proposta.value.id
     })
 

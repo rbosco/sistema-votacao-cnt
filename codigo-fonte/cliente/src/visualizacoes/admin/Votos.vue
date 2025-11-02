@@ -95,6 +95,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useArmazenamentoAutenticacao } from '@/armazenamentos/autenticacao'
 import api from '@/servicos/api'
+import { formatarCPF } from '@/utilidades/formatadores'
 
 const router = useRouter()
 const armazenamentoAuth = useArmazenamentoAutenticacao()
@@ -168,7 +169,7 @@ function exportarCSV() {
     formatarData(voto.votado_em),
     `${voto.proposta?.numero} - ${voto.proposta?.nome}`,
     voto.nome_votante,
-    voto.cpf_votante,
+    formatarCPF(voto.cpf_votante),
     voto.nome_sindicato,
     formatarVoto(voto.voto)
   ])

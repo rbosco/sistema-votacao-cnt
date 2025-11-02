@@ -33,7 +33,14 @@
 
             <div class="form-group">
               <label>CPF:</label>
-              <input v-model="formulario.cpf" type="text" required />
+              <input
+                v-model="formulario.cpf"
+                @input="aplicarMascaraCPF"
+                type="text"
+                required
+                placeholder="000.000.000-00"
+                maxlength="14"
+              />
             </div>
 
             <div class="form-group">
@@ -72,7 +79,7 @@
           <tbody>
             <tr v-for="usuario in usuarios" :key="usuario.id">
               <td>{{ usuario.nome }}</td>
-              <td>{{ usuario.cpf }}</td>
+              <td>{{ formatarCPF(usuario.cpf) }}</td>
               <td>
                 <span :class="['badge', usuario.is_admin ? 'admin' : 'normal']">
                   {{ usuario.is_admin ? 'Admin' : 'Usuário' }}
@@ -95,6 +102,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useArmazenamentoAutenticacao } from '@/armazenamentos/autenticacao'
 import api from '@/servicos/api'
+import { formatarCPF, aplicarMascaraCPF as aplicarMascara, removerFormatacaoCPF } from '@/utilidades/formatadores'
 
 const router = useRouter()
 const armazenamentoAuth = useArmazenamentoAutenticacao()
@@ -111,6 +119,12 @@ const formulario = ref({
   is_admin: false
 })
 
+function aplicarMascaraCPF(event: Event) {
+  aplicarMascara(event)
+  // Atualiza o v-model com o valor formatado
+  formulario.value.cpf = (event.target as HTMLInputElement).value
+}
+
 onMounted(carregarUsuarios)
 
 async function carregarUsuarios() {
@@ -123,14 +137,21 @@ async function carregarUsuarios() {
 }
 
 function editar(usuario: any) {
-  formulario.value = { ...usuario, senha: '' }
+  formulario.value = {
+    ...usuario,
+    cpf: formatarCPF(usuario.cpf),
+    senha: ''
+  }
   editando.value = true
   mostrarFormulario.value = true
 }
 
 async function salvarUsuario() {
   try {
-    const dados = { ...formulario.value }
+    const dados = {
+      ...formulario.value,
+      cpf: removerFormatacaoCPF(formulario.value.cpf)
+    }
     if (editando.value && !dados.senha) {
       delete dados.senha
     }

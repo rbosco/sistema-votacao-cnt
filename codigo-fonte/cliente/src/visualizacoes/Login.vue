@@ -9,10 +9,12 @@
           <label for="cpf">CPF:</label>
           <input
             v-model="formulario.cpf"
+            @input="aplicarMascaraCPF"
             type="text"
             id="cpf"
             required
             placeholder="000.000.000-00"
+            maxlength="14"
             autocomplete="username"
           />
         </div>
@@ -48,6 +50,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useArmazenamentoAutenticacao } from '@/armazenamentos/autenticacao'
+import { aplicarMascaraCPF as aplicarMascara, removerFormatacaoCPF } from '@/utilidades/formatadores'
 
 const router = useRouter()
 const armazenamentoAuth = useArmazenamentoAutenticacao()
@@ -60,13 +63,19 @@ const formulario = ref({
 const enviando = ref(false)
 const erro = ref('')
 
+function aplicarMascaraCPF(event: Event) {
+  aplicarMascara(event)
+  // Atualiza o v-model com o valor formatado
+  formulario.value.cpf = (event.target as HTMLInputElement).value
+}
+
 async function fazerLogin() {
   enviando.value = true
   erro.value = ''
 
   try {
     await armazenamentoAuth.entrar({
-      cpf: formulario.value.cpf,
+      cpf: removerFormatacaoCPF(formulario.value.cpf),
       senha: formulario.value.senha
     })
 
