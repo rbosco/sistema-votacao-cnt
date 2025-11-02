@@ -1,11 +1,12 @@
 #!/bin/bash
 set -e
 
-echo "🚀 Iniciando Sistema de Votação CNT..."
+echo "=========================================="
+echo "Sistema de Votacao CNT - Iniciando..."
+echo "=========================================="
 
-# -----------------------------------------------------
-# Criar diretórios se não existirem (volumes podem sobrescrever)
-# -----------------------------------------------------
+# Criar diretorios necessarios
+echo "[1/7] Criando diretorios..."
 mkdir -p storage/framework/cache/data \
          storage/framework/sessions \
          storage/framework/views \
@@ -15,86 +16,65 @@ mkdir -p storage/framework/cache/data \
 chmod -R 775 storage bootstrap/cache
 chown -R www-data:www-data storage bootstrap/cache
 
-# -----------------------------------------------------
-# Configurar .env usando variáveis de ambiente
-# -----------------------------------------------------
-if [ ! -f ".env" ] || [ "${FORCE_ENV_RESET}" = "true" ]; then
-    echo "📝 Configurando arquivo .env..."
+# Configurar .env
+echo "[2/7] Configurando .env..."
+if [ ! -f ".env" ]; then
     cp .env.example .env
 
-    # Substituir variáveis com valores do docker-compose
-    if [ -n "${APP_ENV}" ]; then
-        sed -i "s/APP_ENV=.*/APP_ENV=${APP_ENV}/" .env
-    fi
+    # Aplicar variaveis de ambiente do docker-compose
     if [ -n "${DB_HOST}" ]; then
-        sed -i "s/DB_HOST=.*/DB_HOST=${DB_HOST}/" .env
+        sed -i "s|DB_HOST=.*|DB_HOST=${DB_HOST}|" .env
     fi
     if [ -n "${DB_PORT}" ]; then
-        sed -i "s/DB_PORT=.*/DB_PORT=${DB_PORT}/" .env
+        sed -i "s|DB_PORT=.*|DB_PORT=${DB_PORT}|" .env
     fi
     if [ -n "${DB_DATABASE}" ]; then
-        sed -i "s/DB_DATABASE=.*/DB_DATABASE=${DB_DATABASE}/" .env
+        sed -i "s|DB_DATABASE=.*|DB_DATABASE=${DB_DATABASE}|" .env
     fi
     if [ -n "${DB_USERNAME}" ]; then
-        sed -i "s/DB_USERNAME=.*/DB_USERNAME=${DB_USERNAME}/" .env
+        sed -i "s|DB_USERNAME=.*|DB_USERNAME=${DB_USERNAME}|" .env
     fi
     if [ -n "${DB_PASSWORD}" ]; then
-        sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${DB_PASSWORD}/" .env
+        sed -i "s|DB_PASSWORD=.*|DB_PASSWORD=${DB_PASSWORD}|" .env
+    fi
+    if [ -n "${APP_ENV}" ]; then
+        sed -i "s|APP_ENV=.*|APP_ENV=${APP_ENV}|" .env
     fi
 fi
 
-# -----------------------------------------------------
-# Gerar APP_KEY se necessário
-# -----------------------------------------------------
-if ! grep -q "APP_KEY=base64:" .env; then
-    echo "🔑 Gerando APP_KEY..."
+# Gerar APP_KEY
+echo "[3/7] Gerando APP_KEY..."
+if ! grep -q "APP_KEY=base64:" .env 2>/dev/null; then
     php artisan key:generate --force
 fi
 
-# -----------------------------------------------------
-# Aguardar banco de dados (apenas em ambiente local)
-# -----------------------------------------------------
-if [ "${APP_ENV}" = "local" ] && [ "${DB_HOST}" = "sqlserver" ]; then
-    echo "⏳ Aguardando SQL Server local..."
-    until /opt/mssql-tools18/bin/sqlcmd -S "${DB_HOST}" -U "${DB_USERNAME}" -P "${DB_PASSWORD}" -C -Q "SELECT 1" > /dev/null 2>&1; do
-        echo "   SQL Server não disponível ainda - aguardando..."
-        sleep 3
-    done
-    echo "✅ SQL Server disponível!"
-fi
+# Migrations (tentar, mas nao falhar se der erro)
+echo "[4/7] Executando migrations..."
+php artisan migrate --force 2>&1 || echo "   AVISO: Migrations falharam (banco pode nao estar acessivel)"
 
-# -----------------------------------------------------
-# Executar migrations
-# -----------------------------------------------------
-echo "🔄 Executando migrations..."
-php artisan migrate --force || echo "⚠️  Migrations falharam (banco pode não estar acessível)"
+# Limpar cache
+echo "[5/7] Limpando cache..."
+php artisan config:clear 2>/dev/null || true
+php artisan cache:clear 2>/dev/null || true
+php artisan route:clear 2>/dev/null || true
+php artisan view:clear 2>/dev/null || true
 
-# -----------------------------------------------------
-# Limpar e otimizar cache
-# -----------------------------------------------------
-echo "🧹 Limpando cache..."
-php artisan config:clear
-php artisan cache:clear
-php artisan route:clear
-php artisan view:clear
-
+# Otimizar para producao
+echo "[6/7] Otimizando aplicacao..."
 if [ "${APP_DEBUG}" != "true" ]; then
-    echo "⚡ Otimizando para produção..."
-    php artisan config:cache
-    php artisan route:cache
-    php artisan view:cache
+    php artisan config:cache 2>/dev/null || true
+    php artisan route:cache 2>/dev/null || true
+    php artisan view:cache 2>/dev/null || true
 fi
 
-# -----------------------------------------------------
-# Criar arquivo de log se não existir
-# -----------------------------------------------------
-touch storage/logs/laravel.log
-chmod 666 storage/logs/laravel.log
+# Criar log file
+touch storage/logs/laravel.log 2>/dev/null || true
+chmod 666 storage/logs/laravel.log 2>/dev/null || true
 
-echo "✅ Sistema configurado e pronto!"
-echo "🌐 Iniciando Apache..."
+echo "[7/7] Iniciando Apache..."
+echo "=========================================="
+echo "Sistema pronto! Escutando na porta 80"
+echo "=========================================="
 
-# -----------------------------------------------------
-# Iniciar Apache em foreground
-# -----------------------------------------------------
+# Iniciar Apache
 exec apache2-foreground
