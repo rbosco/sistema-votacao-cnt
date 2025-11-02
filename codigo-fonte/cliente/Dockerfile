@@ -1,17 +1,26 @@
-FROM node:20-alpine
-
+# ========== Build ==========
+FROM node:20-alpine AS build
 WORKDIR /app
 
-# Copiar arquivos de configuração
-COPY package*.json ./
+# Copia só manifests para aproveitar cache
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 
-# Copiar entrypoint
-COPY entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/entrypoint.sh
-
-# Copiar código-fonte
+# Copia o restante do projeto
 COPY . .
 
-EXPOSE 3000
+# Build de produção
+RUN npm run build
 
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+# ========== Runtime ==========
+FROM nginx:alpine
+
+# Copia artefatos estáticos
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# SPA history mode
+RUN rm /etc/nginx/conf.d/default.conf
+COPY infra/nginx/web.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
