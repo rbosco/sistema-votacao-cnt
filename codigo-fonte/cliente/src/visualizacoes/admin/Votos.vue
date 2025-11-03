@@ -36,18 +36,13 @@
 
       <div class="estatisticas-grid">
         <div class="stat-card a-favor">
-          <h3>A Favor</h3>
+          <h3>Sim</h3>
           <p class="numero">{{ estatisticas.a_favor || 0 }}</p>
         </div>
 
         <div class="stat-card contra">
-          <h3>Contra</h3>
+          <h3>Não</h3>
           <p class="numero">{{ estatisticas.contra || 0 }}</p>
-        </div>
-
-        <div class="stat-card abstencao">
-          <h3>Abstenção</h3>
-          <p class="numero">{{ estatisticas.abstencao || 0 }}</p>
         </div>
 
         <div class="stat-card total">
