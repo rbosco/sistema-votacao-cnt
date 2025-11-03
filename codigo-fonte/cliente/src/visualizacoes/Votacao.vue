@@ -38,16 +38,16 @@
             <div class="botoes-voto">
               <button
                 type="button"
-                @click="formulario.voto = 'a_favor'"
-                :class="['btn-voto', 'btn-sim', { ativo: formulario.voto === 'a_favor' }]"
+                @click="formulario.voto = 1"
+                :class="['btn-voto', 'btn-sim', { ativo: formulario.voto === 1 }]"
               >
                 <span class="icone">👍</span>
                 <span class="texto">Sim</span>
               </button>
               <button
                 type="button"
-                @click="formulario.voto = 'contra'"
-                :class="['btn-voto', 'btn-nao', { ativo: formulario.voto === 'contra' }]"
+                @click="formulario.voto = 0"
+                :class="['btn-voto', 'btn-nao', { ativo: formulario.voto === 0 }]"
               >
                 <span class="icone">👎</span>
                 <span class="texto">Não</span>
@@ -80,11 +80,16 @@ const enviando = ref(false)
 const mensagem = ref('')
 const mensagemTipo = ref<'sucesso' | 'erro'>('sucesso')
 
-const formulario = ref({
+const formulario = ref<{
+  cpf_votante: string
+  nome_votante: string
+  nome_sindicato: string
+  voto: number | null
+}>({
   cpf_votante: '',
   nome_votante: '',
   nome_sindicato: '',
-  voto: ''
+  voto: null
 })
 
 function aplicarMascaraCPF(event: Event) {
@@ -126,7 +131,7 @@ async function enviarVoto() {
       cpf_votante: '',
       nome_votante: '',
       nome_sindicato: '',
-      voto: ''
+      voto: null
     }
   } catch (err: any) {
     mensagem.value = err.response?.data?.message || 'Erro ao registrar voto'
