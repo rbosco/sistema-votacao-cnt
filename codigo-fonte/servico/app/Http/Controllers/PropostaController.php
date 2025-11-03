@@ -16,10 +16,10 @@ class PropostaController extends Controller
         $propostas = Proposta::withCount([
             'votos',
             'votos as total_votos_sim' => function ($query) {
-                $query->where('voto', true);
+                $query->where('voto', 1);
             },
             'votos as total_votos_nao' => function ($query) {
-                $query->where('voto', false);
+                $query->where('voto', 0);
             }
         ])->orderBy('created_at', 'desc')->get();
 
@@ -190,15 +190,18 @@ class PropostaController extends Controller
                 $query->orderBy('votado_em', 'desc');
             }])->findOrFail($id);
 
-            $resultados = [
-                'proposta' => $proposta,
-                'total_votos' => $proposta->votos->count(),
-                'votos_sim' => $proposta->votos->where('voto', true)->count(),
-                'votos_nao' => $proposta->votos->where('voto', false)->count(),
-                'votos' => $proposta->votos,
-            ];
+            $votos_sim = $proposta->votos->where('voto', 1)->count();
+            $votos_nao = $proposta->votos->where('voto', 0)->count();
 
-            return response()->json($resultados);
+            return response()->json([
+                'proposta' => $proposta,
+                'resultados' => [
+                    'sim' => $votos_sim,
+                    'nao' => $votos_nao,
+                ],
+                'total_votos' => $proposta->votos->count(),
+                'votos' => $proposta->votos,
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'mensagem' => 'Proposta não encontrada.',

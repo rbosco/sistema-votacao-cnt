@@ -35,14 +35,14 @@
       </div>
 
       <div class="estatisticas-grid">
-        <div class="stat-card a-favor">
+        <div class="stat-card sim">
           <h3>Sim</h3>
-          <p class="numero">{{ estatisticas.a_favor || 0 }}</p>
+          <p class="numero">{{ estatisticas.sim || 0 }}</p>
         </div>
 
-        <div class="stat-card contra">
+        <div class="stat-card nao">
           <h3>Não</h3>
-          <p class="numero">{{ estatisticas.contra || 0 }}</p>
+          <p class="numero">{{ estatisticas.nao || 0 }}</p>
         </div>
 
         <div class="stat-card total">
@@ -101,16 +101,14 @@ const propostaFiltro = ref('')
 
 const estatisticas = computed(() => {
   const stats = {
-    a_favor: 0,
-    contra: 0,
-    abstencao: 0,
+    sim: 0,
+    nao: 0,
     total: 0
   }
 
   votos.value.forEach(voto => {
-    if (voto.voto === 'a_favor') stats.a_favor++
-    else if (voto.voto === 'contra') stats.contra++
-    else if (voto.voto === 'abstencao') stats.abstencao++
+    if (voto.voto === 1) stats.sim++
+    else if (voto.voto === 0) stats.nao++
     stats.total++
   })
 
@@ -149,13 +147,10 @@ function formatarData(data: string) {
   return new Date(data).toLocaleString('pt-BR')
 }
 
-function formatarVoto(voto: string) {
-  const votos: Record<string, string> = {
-    a_favor: 'A Favor',
-    contra: 'Contra',
-    abstencao: 'Abstenção'
-  }
-  return votos[voto] || voto
+function formatarVoto(voto: number) {
+  if (voto === 1) return 'Sim'
+  if (voto === 0) return 'Não'
+  return String(voto)
 }
 
 function exportarCSV() {
@@ -303,19 +298,14 @@ function sair() {
   text-align: center;
 }
 
-.stat-card.a-favor {
+.stat-card.sim {
   background: #d3f9d8;
   border: 2px solid #2b8a3e;
 }
 
-.stat-card.contra {
+.stat-card.nao {
   background: #ffe3e3;
   border: 2px solid #c92a2a;
-}
-
-.stat-card.abstencao {
-  background: #fff3bf;
-  border: 2px solid #f59f00;
 }
 
 .stat-card.total {
@@ -365,19 +355,16 @@ th {
   font-weight: 600;
 }
 
-.badge-voto.a_favor {
+/* For vote = 1 (Sim) */
+.badge-voto.1 {
   background: #d3f9d8;
   color: #2b8a3e;
 }
 
-.badge-voto.contra {
+/* For vote = 0 (Não) */
+.badge-voto.0 {
   background: #ffe3e3;
   color: #c92a2a;
-}
-
-.badge-voto.abstencao {
-  background: #fff3bf;
-  color: #f59f00;
 }
 
 .sem-dados {

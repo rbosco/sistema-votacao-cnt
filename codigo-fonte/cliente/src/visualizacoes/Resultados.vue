@@ -18,16 +18,16 @@
         <p class="proposta-numero">Proposta #{{ proposta?.numero }}</p>
 
         <div class="estatisticas">
-          <div class="stat-card a-favor">
+          <div class="stat-card sim">
             <h3>Sim</h3>
-            <p class="numero">{{ resultados.a_favor || 0 }}</p>
-            <p class="percentual">{{ calcularPercentual('a_favor') }}%</p>
+            <p class="numero">{{ resultados.sim || 0 }}</p>
+            <p class="percentual">{{ calcularPercentual('sim') }}%</p>
           </div>
 
-          <div class="stat-card contra">
+          <div class="stat-card nao">
             <h3>Não</h3>
-            <p class="numero">{{ resultados.contra || 0 }}</p>
-            <p class="percentual">{{ calcularPercentual('contra') }}%</p>
+            <p class="numero">{{ resultados.nao || 0 }}</p>
+            <p class="percentual">{{ calcularPercentual('nao') }}%</p>
           </div>
         </div>
 
@@ -56,9 +56,8 @@ const carregando = ref(true)
 const erro = ref('')
 
 const total = computed(() => {
-  return (resultados.value.a_favor || 0) +
-         (resultados.value.contra || 0) +
-         (resultados.value.abstencao || 0)
+  return (resultados.value.sim || 0) +
+         (resultados.value.nao || 0)
 })
 
 function calcularPercentual(tipo: string) {
@@ -129,19 +128,14 @@ onMounted(async () => {
   text-align: center;
 }
 
-.stat-card.a-favor {
+.stat-card.sim {
   background: #d3f9d8;
   border: 2px solid #2b8a3e;
 }
 
-.stat-card.contra {
+.stat-card.nao {
   background: #ffe3e3;
   border: 2px solid #c92a2a;
-}
-
-.stat-card.abstencao {
-  background: #fff3bf;
-  border: 2px solid #f59f00;
 }
 
 .stat-card h3 {

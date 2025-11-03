@@ -16,13 +16,13 @@ class VotoController extends Controller
     {
         $request->validate([
             'cpf_votante' => 'required|string|size:11',
-            'voto' => 'required|in:a_favor,contra',
+            'voto' => 'required|in:0,1',
             'proposta_id' => 'required|exists:propostas,id',
         ], [
             'cpf_votante.required' => 'O CPF é obrigatório.',
             'cpf_votante.size' => 'O CPF deve ter 11 dígitos.',
             'voto.required' => 'O voto é obrigatório.',
-            'voto.in' => 'O voto deve ser "a_favor" ou "contra".',
+            'voto.in' => 'O voto deve ser 0 (Não) ou 1 (Sim).',
             'proposta_id.required' => 'A proposta é obrigatória.',
             'proposta_id.exists' => 'A proposta selecionada não existe.',
         ]);
@@ -47,14 +47,11 @@ class VotoController extends Controller
             ]);
         }
 
-        // Converter voto: a_favor = 1 (Sim), contra = 0 (Não)
-        $votoBoolean = $request->voto === 'a_favor' ? 1 : 0;
-
-        // Registrar o voto
+        // Registrar o voto (0 = Não, 1 = Sim)
         $voto = Voto::create([
             'proposta_id' => $proposta->id,
             'cpf_votante' => $request->cpf_votante,
-            'voto' => $votoBoolean,
+            'voto' => (int) $request->voto,
             'votado_em' => now(),
         ]);
 

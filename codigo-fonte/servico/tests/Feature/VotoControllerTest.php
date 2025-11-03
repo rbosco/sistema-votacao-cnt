@@ -12,7 +12,7 @@ class VotoControllerTest extends TestCase
     use RefreshDatabase;
 
     /** @test */
-    public function deve_converter_voto_a_favor_para_1()
+    public function deve_registrar_voto_sim()
     {
         // Arrange
         $proposta = Proposta::factory()->create(['esta_ativa' => true]);
@@ -20,7 +20,7 @@ class VotoControllerTest extends TestCase
         // Act
         $response = $this->postJson('/api/votar', [
             'cpf_votante' => '12345678901',
-            'voto' => 'a_favor',
+            'voto' => 1,
             'proposta_id' => $proposta->id,
         ]);
 
@@ -34,7 +34,7 @@ class VotoControllerTest extends TestCase
     }
 
     /** @test */
-    public function deve_converter_voto_contra_para_0()
+    public function deve_registrar_voto_nao()
     {
         // Arrange
         $proposta = Proposta::factory()->create(['esta_ativa' => true]);
@@ -42,7 +42,7 @@ class VotoControllerTest extends TestCase
         // Act
         $response = $this->postJson('/api/votar', [
             'cpf_votante' => '12345678901',
-            'voto' => 'contra',
+            'voto' => 0,
             'proposta_id' => $proposta->id,
         ]);
 
@@ -68,7 +68,7 @@ class VotoControllerTest extends TestCase
         // Act
         $response = $this->postJson('/api/votar', [
             'cpf_votante' => '12345678901',
-            'voto' => 'a_favor',
+            'voto' => 1,
             'proposta_id' => $proposta->id,
         ]);
 
@@ -86,7 +86,7 @@ class VotoControllerTest extends TestCase
         // Act
         $response = $this->postJson('/api/votar', [
             'cpf_votante' => '12345678901',
-            'voto' => 'a_favor',
+            'voto' => 1,
             'proposta_id' => $proposta->id,
         ]);
 
@@ -103,7 +103,7 @@ class VotoControllerTest extends TestCase
 
         // Act
         $response = $this->postJson('/api/votar', [
-            'voto' => 'a_favor',
+            'voto' => 1,
             'proposta_id' => $proposta->id,
         ]);
 
