@@ -1,7 +1,7 @@
 <template>
   <div class="votacao-container">
-    <header class="header">
-      <img :src="configuracoes.banner_votacao || '/images/banner-cnt.png'" alt="Sistema de Votação CNT" class="banner" />
+    <header class="header" v-if="!carregando">
+      <img :src="bannerUrl" alt="Sistema de Votação CNT" class="banner" />
     </header>
 
     <main class="main-content">
@@ -108,6 +108,10 @@ const temporizadorAtivo = computed(() => {
 
 const votacaoEncerrada = computed(() => {
   return temporizadorAtivo.value && tempoRestante.value <= 0
+})
+
+const bannerUrl = computed(() => {
+  return configuracoes.value.banner_votacao || '/images/banner-cnt.png'
 })
 
 const formulario = ref<{

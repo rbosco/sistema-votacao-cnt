@@ -22,12 +22,24 @@
       <div class="filtros">
         <div class="form-group">
           <label>Filtrar por Proposta:</label>
-          <select v-model="propostaFiltro" @change="carregarVotos">
+          <input
+            type="text"
+            v-model="propostaPesquisa"
+            @input="filtrarPropostas"
+            @change="selecionarProposta"
+            list="propostas-list"
+            placeholder="Digite para pesquisar..."
+            class="input-pesquisa"
+          />
+          <datalist id="propostas-list">
             <option value="">Todas as propostas</option>
-            <option v-for="proposta in propostas" :key="proposta.id" :value="proposta.id">
-              Proposta {{ proposta.numero }} - {{ proposta.nome }}
-            </option>
-          </select>
+            <option
+              v-for="proposta in propostasFiltradas"
+              :key="proposta.id"
+              :value="`${proposta.numero} - ${proposta.nome}`"
+              :data-id="proposta.id"
+            />
+          </datalist>
         </div>
 
         <button @click="exportarCSV" class="btn-exportar">
@@ -58,21 +70,30 @@
             <tr>
               <th>Data/Hora</th>
               <th>Proposta</th>
-              <th>Votante</th>
-              <th>Sindicato</th>
+              <th>Votante (CPF)</th>
               <th>Voto</th>
+              <th>Resultado</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="voto in votos" :key="voto.id">
               <td>{{ formatarData(voto.votado_em) }}</td>
               <td>{{ voto.proposta?.numero }} - {{ voto.proposta?.nome }}</td>
-              <td>{{ voto.nome_votante }}</td>
-              <td>{{ voto.nome_sindicato }}</td>
+              <td>{{ formatarCPF(voto.cpf_votante) }}</td>
               <td>
-                <span :class="['badge-voto', voto.voto]">
+                <span :class="['badge-voto', obterClasseVoto(voto.voto)]">
                   {{ formatarVoto(voto.voto) }}
                 </span>
+              </td>
+              <td>
+                <a
+                  v-if="voto.proposta_id_criptografado"
+                  :href="`/resultados/${voto.proposta_id_criptografado}`"
+                  target="_blank"
+                  class="link-resultado"
+                >
+                  Ver Resultado
+                </a>
               </td>
             </tr>
           </tbody>
@@ -98,7 +119,9 @@ const armazenamentoAuth = useArmazenamentoAutenticacao()
 
 const votos = ref<any[]>([])
 const propostas = ref<any[]>([])
+const propostasFiltradas = ref<any[]>([])
 const propostaFiltro = ref('')
+const propostaPesquisa = ref('')
 
 const estatisticas = computed(() => {
   const stats = {
@@ -125,9 +148,39 @@ async function carregarPropostas() {
   try {
     const response = await api.get('/propostas')
     propostas.value = response.data
+    propostasFiltradas.value = response.data
   } catch (err) {
     console.error('Erro ao carregar propostas:', err)
   }
+}
+
+function filtrarPropostas() {
+  const pesquisa = propostaPesquisa.value.toLowerCase()
+  if (!pesquisa) {
+    propostasFiltradas.value = propostas.value
+  } else {
+    propostasFiltradas.value = propostas.value.filter(p =>
+      `${p.numero} - ${p.nome}`.toLowerCase().includes(pesquisa)
+    )
+  }
+}
+
+function selecionarProposta() {
+  // Encontrar proposta pelo texto selecionado
+  const textoSelecionado = propostaPesquisa.value
+
+  if (!textoSelecionado || textoSelecionado === 'Todas as propostas') {
+    propostaFiltro.value = ''
+  } else {
+    const proposta = propostas.value.find(p =>
+      `${p.numero} - ${p.nome}` === textoSelecionado
+    )
+    if (proposta) {
+      propostaFiltro.value = proposta.id
+    }
+  }
+
+  carregarVotos()
 }
 
 async function carregarVotos() {
@@ -148,20 +201,26 @@ function formatarData(data: string) {
   return new Date(data).toLocaleString('pt-BR')
 }
 
-function formatarVoto(voto: number) {
-  if (voto === 1) return 'Sim'
-  if (voto === 0) return 'Não'
+function formatarVoto(voto: any) {
+  // Lidar com diferentes formatos de voto
+  if (voto === 1 || voto === true || voto === '1') return 'Sim'
+  if (voto === 0 || voto === false || voto === '0') return 'Não'
+  return String(voto)
+}
+
+function obterClasseVoto(voto: any) {
+  // Retorna '1' ou '0' para a classe CSS
+  if (voto === 1 || voto === true || voto === '1') return '1'
+  if (voto === 0 || voto === false || voto === '0') return '0'
   return String(voto)
 }
 
 function exportarCSV() {
-  const headers = ['Data/Hora', 'Proposta', 'Votante', 'CPF', 'Sindicato', 'Voto']
+  const headers = ['Data/Hora', 'Proposta', 'CPF', 'Voto']
   const rows = votos.value.map(voto => [
     formatarData(voto.votado_em),
     `${voto.proposta?.numero} - ${voto.proposta?.nome}`,
-    voto.nome_votante,
     formatarCPF(voto.cpf_votante),
-    voto.nome_sindicato,
     formatarVoto(voto.voto)
   ])
 
@@ -372,5 +431,33 @@ th {
   text-align: center;
   padding: 3rem;
   color: #666;
+}
+
+.link-resultado {
+  color: #1351b4;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.link-resultado:hover {
+  background: #e7f5ff;
+  text-decoration: underline;
+}
+
+.input-pesquisa {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.input-pesquisa:focus {
+  outline: none;
+  border-color: #1351b4;
+  box-shadow: 0 0 0 3px rgba(19, 81, 180, 0.1);
 }
 </style>

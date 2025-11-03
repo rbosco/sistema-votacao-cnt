@@ -75,11 +75,25 @@ class VotoController extends Controller
     /**
      * Listar todos os votos (admin)
      */
-    public function index()
+    public function index(Request $request)
     {
-        $votos = Voto::with('proposta')
-            ->orderBy('votado_em', 'desc')
-            ->get();
+        $query = Voto::with('proposta')
+            ->orderBy('votado_em', 'desc');
+
+        // Filtrar por proposta se fornecido
+        if ($request->has('proposta_id') && $request->proposta_id) {
+            $query->where('proposta_id', $request->proposta_id);
+        }
+
+        $votos = $query->get();
+
+        // Adicionar ID criptografado da proposta
+        $votos->transform(function ($voto) {
+            if ($voto->proposta_id) {
+                $voto->proposta_id_criptografado = encrypt($voto->proposta_id);
+            }
+            return $voto;
+        });
 
         return response()->json($votos);
     }
