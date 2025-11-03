@@ -67,6 +67,7 @@ class PropostaController extends Controller
         $request->validate([
             'numero' => 'nullable|string|max:255',
             'nome' => 'required|string|max:255',
+            'esta_ativa' => 'boolean',
         ], [
             'nome.required' => 'O nome da proposta é obrigatório.',
             'nome.max' => 'O nome não pode ter mais de :max caracteres.',
@@ -74,11 +75,28 @@ class PropostaController extends Controller
         ]);
 
         $proposta = Proposta::findOrFail($id);
-        $proposta->update([
-            'numero' => $request->numero,
-            'nome' => $request->nome,
-            'esta_ativa' => $request->esta_ativa ? 1 : 0,
-        ]);
+
+        // Se a proposta está sendo marcada como ativa
+        if ($request->has('esta_ativa') && $request->esta_ativa) {
+            DB::transaction(function () use ($request, $proposta) {
+                // Desativar todas as propostas
+                Proposta::where('esta_ativa', true)->update(['esta_ativa' => false]);
+
+                // Atualizar a proposta e marcá-la como ativa
+                $proposta->update([
+                    'numero' => $request->numero,
+                    'nome' => $request->nome,
+                    'esta_ativa' => true,
+                ]);
+            });
+        } else {
+            // Atualizar normalmente
+            $proposta->update([
+                'numero' => $request->numero,
+                'nome' => $request->nome,
+                'esta_ativa' => $request->esta_ativa ?? $proposta->esta_ativa,
+            ]);
+        }
 
         return response()->json($proposta);
     }
