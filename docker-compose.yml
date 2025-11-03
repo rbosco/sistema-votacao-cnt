@@ -29,11 +29,15 @@ services:
       - "9000"
     volumes:
       - ./codigo-fonte/servico:/var/www/html
+      - ./codigo-fonte/servico/docker_mte/extra/development.ini:/usr/local/etc/php/conf.d/zzz-development.ini
       - vendor-data:/var/www/html/vendor
       - storage-data:/var/www/html/storage
     networks:
       - srt-network
     restart: unless-stopped
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
 
 networks:
   srt-network:
