@@ -146,7 +146,8 @@ async function carregarConfiguracoes() {
 async function atualizarTempoRestante() {
   if (temporizadorAtivo.value) {
     try {
-      const response = await api.get('/configuracoes')
+      // skipLoading: true para não mostrar loading durante polling
+      const response = await api.get('/configuracoes', { skipLoading: true })
       configuracoes.value.tempo_restante_segundos = response.data.tempo_restante_segundos
       configuracoes.value.temporizador_ativo_verificado = response.data.temporizador_ativo_verificado
     } catch (err) {

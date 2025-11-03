@@ -146,7 +146,8 @@ onMounted(async () => {
     if (temporizadorAtivo.value) {
       intervalo = setInterval(async () => {
         try {
-          const response = await api.get('/configuracoes')
+          // skipLoading: true para não mostrar loading durante polling
+          const response = await api.get('/configuracoes', { skipLoading: true })
           configuracoes.value = response.data
           tempoRestante.value = response.data.tempo_restante_segundos || 0
         } catch (err) {

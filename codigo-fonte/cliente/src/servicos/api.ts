@@ -18,8 +18,11 @@ if (token) {
 // Interceptor para adicionar loading
 api.interceptors.request.use(
   config => {
-    const loadingStore = useArmazenamentoLoading()
-    loadingStore.iniciar()
+    // Não mostrar loading se skipLoading estiver true
+    if (!config.skipLoading) {
+      const loadingStore = useArmazenamentoLoading()
+      loadingStore.iniciar()
+    }
     return config
   },
   erro => {
@@ -32,8 +35,11 @@ api.interceptors.request.use(
 // Interceptor para lidar com erros de autenticação e remover loading
 api.interceptors.response.use(
   resposta => {
-    const loadingStore = useArmazenamentoLoading()
-    loadingStore.parar()
+    // Só parar loading se não tiver skipLoading
+    if (!resposta.config.skipLoading) {
+      const loadingStore = useArmazenamentoLoading()
+      loadingStore.parar()
+    }
     return resposta
   },
   erro => {
