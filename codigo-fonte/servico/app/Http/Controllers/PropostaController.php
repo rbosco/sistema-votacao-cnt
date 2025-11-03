@@ -64,41 +64,74 @@ class PropostaController extends Controller
      */
     public function atualizar(Request $request, $id)
     {
-        $request->validate([
-            'numero' => 'nullable|string|max:255',
-            'nome' => 'required|string|max:255',
-            'esta_ativa' => 'boolean',
-        ], [
-            'nome.required' => 'O nome da proposta é obrigatório.',
-            'nome.max' => 'O nome não pode ter mais de :max caracteres.',
-            'numero.max' => 'O número não pode ter mais de :max caracteres.',
-        ]);
+        try {
+            \Log::info('Iniciando atualização de proposta', [
+                'proposta_id' => $id,
+                'dados' => $request->all()
+            ]);
 
-        $proposta = Proposta::findOrFail($id);
+            $request->validate([
+                'numero' => 'nullable|string|max:255',
+                'nome' => 'required|string|max:255',
+                'esta_ativa' => 'boolean',
+            ], [
+                'nome.required' => 'O nome da proposta é obrigatório.',
+                'nome.max' => 'O nome não pode ter mais de :max caracteres.',
+                'numero.max' => 'O número não pode ter mais de :max caracteres.',
+            ]);
 
-        // Se a proposta está sendo marcada como ativa
-        if ($request->has('esta_ativa') && $request->esta_ativa) {
-            DB::transaction(function () use ($request, $proposta) {
-                // Desativar todas as propostas
-                Proposta::where('esta_ativa', true)->update(['esta_ativa' => false]);
+            $proposta = Proposta::findOrFail($id);
+            \Log::info('Proposta encontrada', ['proposta' => $proposta->toArray()]);
 
-                // Atualizar a proposta e marcá-la como ativa
+            // Se a proposta está sendo marcada como ativa
+            if ($request->has('esta_ativa') && $request->esta_ativa) {
+                \Log::info('Ativando proposta', ['proposta_id' => $id]);
+
+                DB::transaction(function () use ($request, $id) {
+                    // Desativar todas as propostas
+                    $desativadas = Proposta::where('esta_ativa', true)->update(['esta_ativa' => false]);
+                    \Log::info('Propostas desativadas', ['count' => $desativadas]);
+
+                    // Atualizar a proposta e marcá-la como ativa
+                    $proposta = Proposta::findOrFail($id);
+                    $proposta->update([
+                        'numero' => $request->numero,
+                        'nome' => $request->nome,
+                        'esta_ativa' => true,
+                    ]);
+                    \Log::info('Proposta atualizada e ativada', ['proposta' => $proposta->toArray()]);
+                });
+
+                // Recarregar a proposta para retornar os dados atualizados
+                $proposta = Proposta::findOrFail($id);
+            } else {
+                \Log::info('Atualizando proposta normalmente', [
+                    'proposta_id' => $id,
+                    'esta_ativa' => $request->esta_ativa ?? $proposta->esta_ativa
+                ]);
+
+                // Atualizar normalmente
                 $proposta->update([
                     'numero' => $request->numero,
                     'nome' => $request->nome,
-                    'esta_ativa' => true,
+                    'esta_ativa' => $request->esta_ativa ?? $proposta->esta_ativa,
                 ]);
-            });
-        } else {
-            // Atualizar normalmente
-            $proposta->update([
-                'numero' => $request->numero,
-                'nome' => $request->nome,
-                'esta_ativa' => $request->esta_ativa ?? $proposta->esta_ativa,
-            ]);
-        }
+            }
 
-        return response()->json($proposta);
+            \Log::info('Proposta atualizada com sucesso', ['proposta' => $proposta->toArray()]);
+            return response()->json($proposta);
+
+        } catch (\Exception $e) {
+            \Log::error('Erro ao atualizar proposta', [
+                'proposta_id' => $id,
+                'erro' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Erro ao atualizar proposta: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
