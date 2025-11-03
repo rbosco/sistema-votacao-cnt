@@ -47,11 +47,18 @@ class VotoController extends Controller
             ]);
         }
 
+        // Converter voto: a_favor = 1 (Sim), contra = 0 (Não)
+        $votoBoolean = $request->voto === 'a_favor' ? 1 : 0;
+
         // Registrar o voto
         $voto = Voto::create([
             'proposta_id' => $proposta->id,
             'cpf_votante' => $request->cpf_votante,
+<<<<<<< HEAD
             'voto' => $request->voto,
+=======
+            'voto' => $votoBoolean,
+>>>>>>> d58cd808fd74f6b2d19b3b8cbfe48f7c4a6d5d3b
             'votado_em' => now(),
         ]);
 
