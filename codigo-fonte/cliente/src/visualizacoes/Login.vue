@@ -1,9 +1,7 @@
 <template>
   <div class="login-container">
     <div class="login-card">
-      <h1>Login Administrativo</h1>
-      <p>Sistema de Votação CNT</p>
-
+      
       <form @submit.prevent="fazerLogin" class="login-form">
         <div class="form-group">
           <label for="cpf">CPF:</label>
