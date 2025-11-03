@@ -51,8 +51,6 @@ class VotoController extends Controller
         $voto = Voto::create([
             'proposta_id' => $proposta->id,
             'cpf_votante' => $request->cpf_votante,
-            'nome_votante' => $request->nome_votante,
-            'nome_sindicato' => $request->nome_sindicato,
             'voto' => $request->voto,
             'votado_em' => now(),
         ]);

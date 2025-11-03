@@ -20,8 +20,6 @@ class Voto extends Model
     protected $fillable = [
         'proposta_id',
         'cpf_votante',
-        'nome_votante',
-        'nome_sindicato',
         'voto',
         'votado_em',
     ];
