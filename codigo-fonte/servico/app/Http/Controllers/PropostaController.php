@@ -64,7 +64,6 @@ class PropostaController extends Controller
      */
     public function atualizar(Request $request, $id)
     {
-        dd($request->all());
         $request->validate([
             'numero' => 'nullable|string|max:255',
             'nome' => 'required|string|max:255',
@@ -75,7 +74,6 @@ class PropostaController extends Controller
         ]);
 
         $proposta = Proposta::findOrFail($id);
-        dd('teste');
         $proposta->update([
             'numero' => $request->numero,
             'nome' => $request->nome,
