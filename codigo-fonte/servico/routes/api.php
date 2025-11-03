@@ -7,6 +7,7 @@ use App\Http\Controllers\PropostaController;
 use App\Http\Controllers\VotoController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\ConfiguracaoController;
 
 // Rotas de Health Check (públicas)
 Route::get('/health', [HealthController::class, 'index']);
@@ -17,6 +18,7 @@ Route::post('/entrar', [AutenticacaoController::class, 'entrar']);
 Route::post('/votar', [VotoController::class, 'votar']);
 Route::get('/propostas/ativa', [PropostaController::class, 'obterAtiva']);
 Route::get('/propostas/{idCriptografado}/resultados', [PropostaController::class, 'obterResultados']);
+Route::get('/configuracoes', [ConfiguracaoController::class, 'index']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/sair', [AutenticacaoController::class, 'sair']);
@@ -34,4 +36,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/propostas/{id}/desativar', [PropostaController::class, 'desativar']);
     Route::get('/votos', [VotoController::class, 'index']);
     Route::get('/propostas/{id}/votos', [VotoController::class, 'obterPorProposta']);
+    Route::put('/configuracoes', [ConfiguracaoController::class, 'atualizar']);
+    Route::post('/configuracoes/banner', [ConfiguracaoController::class, 'uploadBanner']);
+    Route::post('/configuracoes/temporizador/reiniciar', [ConfiguracaoController::class, 'reiniciarTemporizador']);
 });

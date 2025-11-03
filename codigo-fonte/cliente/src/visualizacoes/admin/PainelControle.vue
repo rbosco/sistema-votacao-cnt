@@ -9,6 +9,7 @@
         <li><router-link to="/admin/propostas">Propostas</router-link></li>
         <li><router-link to="/admin/usuarios">Usuários</router-link></li>
         <li><router-link to="/admin/votos">Votos</router-link></li>
+        <li><router-link to="/admin/configuracao">Configuração</router-link></li>
         <li><a href="#" @click.prevent="sair" class="sair">Sair</a></li>
       </ul>
     </nav>

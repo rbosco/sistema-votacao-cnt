@@ -1,7 +1,7 @@
 <template>
   <div class="votacao-container">
     <header class="header">
-      <img src="/images/banner-cnt.png" alt="Sistema de Votação CNT" class="banner" />
+      <img :src="configuracoes.banner_votacao || '/images/banner-cnt.png'" alt="Sistema de Votação CNT" class="banner" />
     </header>
 
     <main class="main-content">
@@ -17,8 +17,26 @@
         <p>Não há propostas ativas no momento.</p>
       </div>
 
-      <div v-else class="proposta-card">
-        <h2>Proposta {{ proposta.numero }}: {{ proposta.nome }}</h2>
+      <div v-else>
+        <!-- Temporizador -->
+        <div v-if="temporizadorAtivo" class="temporizador-container">
+          <div v-if="tempoRestante > 0" class="temporizador ativo">
+            <div class="temporizador-icone">⏱️</div>
+            <div class="temporizador-info">
+              <div class="temporizador-label">Tempo restante para votação:</div>
+              <div class="temporizador-tempo">{{ formatarTempo(tempoRestante) }}</div>
+            </div>
+          </div>
+          <div v-else class="temporizador expirado">
+            <div class="temporizador-icone">⏰</div>
+            <div class="temporizador-info">
+              <div class="temporizador-label">Tempo de votação encerrado</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="proposta-card">
+          <h2>Proposta {{ proposta.numero }}: {{ proposta.nome }}</h2>
 
         <form @submit.prevent="enviarVoto" class="form-voto">
           <div class="form-group">
@@ -55,13 +73,14 @@
             </div>
           </div>
 
-          <button type="submit" :disabled="enviando" class="btn-submit">
-            {{ enviando ? 'Enviando...' : 'Confirmar Voto' }}
+          <button type="submit" :disabled="enviando || votacaoEncerrada" class="btn-submit">
+            {{ enviando ? 'Enviando...' : votacaoEncerrada ? 'Votação Encerrada' : 'Confirmar Voto' }}
           </button>
         </form>
 
-        <div v-if="mensagem" :class="['mensagem', mensagemTipo]">
-          {{ mensagem }}
+          <div v-if="mensagem" :class="['mensagem', mensagemTipo]">
+            {{ mensagem }}
+          </div>
         </div>
       </div>
     </main>
@@ -69,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import api from '@/servicos/api'
 import { aplicarMascaraCPF as aplicarMascara, removerFormatacaoCPF } from '@/utilidades/formatadores'
 
@@ -79,6 +98,17 @@ const erro = ref('')
 const enviando = ref(false)
 const mensagem = ref('')
 const mensagemTipo = ref<'sucesso' | 'erro'>('sucesso')
+const configuracoes = ref<any>({})
+const tempoRestante = ref(0)
+
+const temporizadorAtivo = computed(() => {
+  return configuracoes.value.temporizador_ativo === '1' &&
+         configuracoes.value.temporizador_ativo_verificado === true
+})
+
+const votacaoEncerrada = computed(() => {
+  return temporizadorAtivo.value && tempoRestante.value <= 0
+})
 
 const formulario = ref<{
   cpf_votante: string
@@ -98,11 +128,32 @@ function aplicarMascaraCPF(event: Event) {
   formulario.value.cpf_votante = (event.target as HTMLInputElement).value
 }
 
+let intervalo: any = null
+
 onMounted(async () => {
   try {
-    const response = await api.get('/propostas/ativa')
-    console.log(response.data);
-    proposta.value = response.data
+    // Carregar proposta e configurações
+    const [propostaResponse, configResponse] = await Promise.all([
+      api.get('/propostas/ativa'),
+      api.get('/configuracoes')
+    ])
+
+    proposta.value = propostaResponse.data
+    configuracoes.value = configResponse.data
+    tempoRestante.value = configResponse.data.tempo_restante_segundos || 0
+
+    // Atualizar tempo restante a cada segundo se o temporizador está ativo
+    if (temporizadorAtivo.value) {
+      intervalo = setInterval(async () => {
+        try {
+          const response = await api.get('/configuracoes')
+          configuracoes.value = response.data
+          tempoRestante.value = response.data.tempo_restante_segundos || 0
+        } catch (err) {
+          console.error('Erro ao atualizar temporizador:', err)
+        }
+      }, 1000)
+    }
   } catch (err: any) {
     erro.value = err.response?.data?.message || 'Erro ao carregar proposta'
   } finally {
@@ -110,8 +161,14 @@ onMounted(async () => {
   }
 })
 
+onUnmounted(() => {
+  if (intervalo) {
+    clearInterval(intervalo)
+  }
+})
+
 async function enviarVoto() {
-  if (!proposta.value) return
+  if (!proposta.value || votacaoEncerrada.value) return
 
   enviando.value = true
   mensagem.value = ''
@@ -138,6 +195,18 @@ async function enviarVoto() {
     mensagemTipo.value = 'erro'
   } finally {
     enviando.value = false
+  }
+}
+
+function formatarTempo(segundos: number): string {
+  const horas = Math.floor(segundos / 3600)
+  const minutos = Math.floor((segundos % 3600) / 60)
+  const segs = segundos % 60
+
+  if (horas > 0) {
+    return `${horas}:${String(minutos).padStart(2, '0')}:${String(segs).padStart(2, '0')}`
+  } else {
+    return `${minutos}:${String(segs).padStart(2, '0')}`
   }
 }
 </script>
@@ -312,6 +381,56 @@ async function enviarVoto() {
 
 .mensagem.erro {
   background: #ffe3e3;
+  color: #c92a2a;
+}
+
+.temporizador-container {
+  margin-bottom: 2rem;
+}
+
+.temporizador {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.temporizador.ativo {
+  border-left: 4px solid #1351b4;
+}
+
+.temporizador.expirado {
+  border-left: 4px solid #c92a2a;
+}
+
+.temporizador-icone {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.temporizador-info {
+  flex: 1;
+}
+
+.temporizador-label {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.temporizador-tempo {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #1351b4;
+  font-family: 'Courier New', monospace;
+}
+
+.temporizador.expirado .temporizador-label {
+  font-size: 1.2rem;
+  font-weight: 600;
   color: #c92a2a;
 }
 </style>

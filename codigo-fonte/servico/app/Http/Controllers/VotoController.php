@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Proposta;
 use App\Models\Voto;
+use App\Models\Configuracao;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -34,6 +35,16 @@ class VotoController extends Controller
             return response()->json([
                 'message' => 'Votação encerrada.',
             ], 422);
+        }
+
+        // Verificar o temporizador se estiver ativo
+        $temporizadorAtivo = Configuracao::obter('temporizador_ativo', '0');
+        if ($temporizadorAtivo === '1') {
+            if (!Configuracao::temporizadorAtivo()) {
+                return response()->json([
+                    'message' => 'Tempo de votação encerrado.',
+                ], 422);
+            }
         }
 
         // Verificar se o CPF já votou nesta proposta

@@ -43,6 +43,12 @@ const rotas: RouteRecordRaw[] = [
     meta: { requerAutenticacao: true },
   },
   {
+    path: '/admin/configuracao',
+    name: 'Configuracao',
+    component: () => import('@/visualizacoes/admin/Configuracao.vue'),
+    meta: { requerAutenticacao: true },
+  },
+  {
     path: '/resultados/:idCriptografado',
     name: 'Resultados',
     component: () => import('@/visualizacoes/Resultados.vue'),
