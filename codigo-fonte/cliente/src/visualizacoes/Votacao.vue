@@ -169,8 +169,14 @@ onMounted(async () => {
     console.log('Tipo da resposta:', typeof propostaResponse.data)
     console.log('É null?', propostaResponse.data === null)
     console.log('É undefined?', propostaResponse.data === undefined)
+    console.log('É objeto vazio?', propostaResponse.data && Object.keys(propostaResponse.data).length === 0)
 
-    proposta.value = propostaResponse.data
+    // Tratar null, undefined ou objeto vazio como "sem proposta"
+    if (!propostaResponse.data || Object.keys(propostaResponse.data).length === 0) {
+      proposta.value = null
+    } else {
+      proposta.value = propostaResponse.data
+    }
     configuracoes.value = configResponse.data
     tempoRestante.value = configResponse.data.tempo_restante_segundos || 0
 
@@ -184,8 +190,13 @@ onMounted(async () => {
           api.get('/configuracoes', { skipLoading: true })
         ])
 
-        const novaProposta = propostaResponse.data
+        let novaProposta = propostaResponse.data
         const novasConfiguracoes = configResponse.data
+
+        // Tratar null, undefined ou objeto vazio como "sem proposta"
+        if (!novaProposta || Object.keys(novaProposta).length === 0) {
+          novaProposta = null
+        }
 
         // Verificar se o status da proposta mudou
         if (proposta.value && novaProposta &&
