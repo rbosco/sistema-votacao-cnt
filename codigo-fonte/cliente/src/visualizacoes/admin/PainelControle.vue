@@ -24,25 +24,25 @@
         <div class="stat-card">
           <div class="stat-icon">📊</div>
           <h3>Total de Propostas</h3>
-          <p class="stat-number">{{ estatisticas.total_propostas }}</p>
+          <p class="stat-number" :class="{ atualizando: atualizando }">{{ estatisticas.total_propostas }}</p>
         </div>
 
         <div class="stat-card">
           <div class="stat-icon">✅</div>
           <h3>Propostas Ativas</h3>
-          <p class="stat-number">{{ estatisticas.propostas_ativas }}</p>
+          <p class="stat-number" :class="{ atualizando: atualizando }">{{ estatisticas.propostas_ativas }}</p>
         </div>
 
         <div class="stat-card">
           <div class="stat-icon">🗳️</div>
           <h3>Total de Votos</h3>
-          <p class="stat-number">{{ estatisticas.total_votos }}</p>
+          <p class="stat-number" :class="{ atualizando: atualizando }">{{ estatisticas.total_votos }}</p>
         </div>
 
         <div class="stat-card">
           <div class="stat-icon">👥</div>
           <h3>Usuários Cadastrados</h3>
-          <p class="stat-number">{{ estatisticas.usuarios_cadastrados }}</p>
+          <p class="stat-number" :class="{ atualizando: atualizando }">{{ estatisticas.usuarios_cadastrados }}</p>
         </div>
       </div>
 
@@ -68,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useArmazenamentoAutenticacao } from '@/armazenamentos/autenticacao'
 import api from '@/servicos/api'
@@ -83,14 +83,47 @@ const estatisticas = ref({
   usuarios_cadastrados: 0
 })
 
+const atualizando = ref(false)
+let intervalo: any = null
+
 onMounted(async () => {
-  try {
-    const response = await api.get('/dashboard')
-    estatisticas.value = response.data
-  } catch (err) {
-    console.error('Erro ao carregar estatísticas:', err)
+  await carregarEstatisticas()
+
+  // Atualização em tempo real - polling a cada 5 segundos
+  intervalo = setInterval(async () => {
+    await carregarEstatisticas(true)
+  }, 5000)
+})
+
+onUnmounted(() => {
+  if (intervalo) {
+    clearInterval(intervalo)
   }
 })
+
+async function carregarEstatisticas(skipLoading = false) {
+  try {
+    if (skipLoading) {
+      atualizando.value = true
+    }
+
+    const config = skipLoading ? { skipLoading: true } : {}
+    const response = await api.get('/dashboard', config)
+    estatisticas.value = response.data
+
+    if (skipLoading) {
+      // Manter o indicador de atualização por um breve momento
+      setTimeout(() => {
+        atualizando.value = false
+      }, 300)
+    }
+  } catch (err) {
+    if (!skipLoading) {
+      console.error('Erro ao carregar estatísticas:', err)
+    }
+    atualizando.value = false
+  }
+}
 
 async function sair() {
   await armazenamentoAuth.sair()
@@ -198,6 +231,22 @@ async function sair() {
   font-weight: bold;
   color: #1351b4;
   margin: 0;
+  transition: all 0.3s ease;
+}
+
+.stat-number.atualizando {
+  animation: pulso 0.5s ease-in-out;
+}
+
+@keyframes pulso {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
 }
 
 .atalhos {
