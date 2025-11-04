@@ -17,9 +17,18 @@
     <main class="main-content">
       <header class="header">
         <h1>Gerenciar Usuários</h1>
-        <button @click="mostrarFormulario = true" class="btn-novo">
-          + Novo Usuário
-        </button>
+        <div class="botoes-header">
+          <button
+            v-if="usuariosSelecionados.length > 0"
+            @click="excluirSelecionados"
+            class="btn-excluir-massa"
+          >
+            🗑️ Excluir Selecionados ({{ usuariosSelecionados.length }})
+          </button>
+          <button @click="mostrarFormulario = true" class="btn-novo">
+            + Novo Usuário
+          </button>
+        </div>
       </header>
 
       <div class="filtros-container">
@@ -83,6 +92,14 @@
         <table>
           <thead>
             <tr>
+              <th class="th-checkbox">
+                <input
+                  type="checkbox"
+                  :checked="todosSelecionados"
+                  @change="toggleSelecionarTodos"
+                  title="Selecionar todos"
+                />
+              </th>
               <th>Nome</th>
               <th>CPF</th>
               <th>Tipo</th>
@@ -91,6 +108,13 @@
           </thead>
           <tbody>
             <tr v-for="usuario in usuarios" :key="usuario.id">
+              <td class="td-checkbox">
+                <input
+                  type="checkbox"
+                  :checked="usuariosSelecionados.includes(usuario.id)"
+                  @change="toggleSelecao(usuario.id)"
+                />
+              </td>
               <td>{{ usuario.nome }}</td>
               <td>{{ formatarCPF(usuario.cpf) }}</td>
               <td>
@@ -131,6 +155,7 @@ const editando = ref(false)
 const busca = ref('')
 const paginaAtual = ref(1)
 const itensPorPagina = 10
+const usuariosSelecionados = ref<number[]>([])
 
 const formulario = ref({
   id: null,
@@ -182,6 +207,12 @@ const paginacao = computed(() => {
   }
 })
 
+// Verificar se todos da página atual estão selecionados
+const todosSelecionados = computed(() => {
+  if (usuarios.value.length === 0) return false
+  return usuarios.value.every(u => usuariosSelecionados.value.includes(u.id))
+})
+
 onMounted(() => carregarUsuarios())
 
 async function carregarUsuarios() {
@@ -202,6 +233,59 @@ function mudarPagina(pagina: number) {
 function limparPesquisa() {
   busca.value = ''
   paginaAtual.value = 1
+}
+
+// Funções de seleção múltipla
+function toggleSelecao(id: number) {
+  const index = usuariosSelecionados.value.indexOf(id)
+  if (index > -1) {
+    usuariosSelecionados.value.splice(index, 1)
+  } else {
+    usuariosSelecionados.value.push(id)
+  }
+}
+
+function toggleSelecionarTodos() {
+  if (todosSelecionados.value) {
+    // Desselecionar todos da página atual
+    usuarios.value.forEach(u => {
+      const index = usuariosSelecionados.value.indexOf(u.id)
+      if (index > -1) {
+        usuariosSelecionados.value.splice(index, 1)
+      }
+    })
+  } else {
+    // Selecionar todos da página atual
+    usuarios.value.forEach(u => {
+      if (!usuariosSelecionados.value.includes(u.id)) {
+        usuariosSelecionados.value.push(u.id)
+      }
+    })
+  }
+}
+
+async function excluirSelecionados() {
+  if (usuariosSelecionados.value.length === 0) return
+
+  const confirmacao = confirm(
+    `Deseja realmente excluir ${usuariosSelecionados.value.length} usuário(s) selecionado(s)?`
+  )
+
+  if (!confirmacao) return
+
+  try {
+    // Excluir múltiplos usuários
+    await Promise.all(
+      usuariosSelecionados.value.map(id => api.delete(`/usuarios/${id}`))
+    )
+
+    usuariosSelecionados.value = []
+    await carregarUsuarios()
+    alert('Usuários excluídos com sucesso!')
+  } catch (err) {
+    console.error('Erro ao excluir usuários:', err)
+    alert('Erro ao excluir um ou mais usuários')
+  }
 }
 
 function editar(usuario: any) {
@@ -351,13 +435,45 @@ async function sair() {
   margin: 0;
 }
 
+.botoes-header {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
 .btn-novo {
   background: #1351b4;
   color: white;
   padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-novo:hover {
+  background: #0d3a7f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.btn-excluir-massa {
+  background: #c92a2a;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.btn-excluir-massa:hover {
+  background: #a61e1e;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(201, 42, 42, 0.3);
 }
 
 .tabela-container {
@@ -382,6 +498,21 @@ th {
   background: #f8f9fa;
   font-weight: 600;
   color: #1351b4;
+}
+
+.th-checkbox,
+.td-checkbox {
+  width: 40px;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.th-checkbox input[type="checkbox"],
+.td-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #1351b4;
 }
 
 .badge {

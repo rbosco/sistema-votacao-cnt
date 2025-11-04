@@ -18,6 +18,13 @@
       <header class="header">
         <h1>Gerenciar Propostas</h1>
         <div class="botoes-header">
+          <button
+            v-if="propostasSelecionadas.length > 0"
+            @click="excluirSelecionadas"
+            class="btn-excluir-massa"
+          >
+            🗑️ Excluir Selecionadas ({{ propostasSelecionadas.length }})
+          </button>
           <button @click="downloadModelo" class="btn-download-modelo">
             📥 Baixar Modelo
           </button>
@@ -94,6 +101,14 @@
         <table>
           <thead>
             <tr>
+              <th class="th-checkbox">
+                <input
+                  type="checkbox"
+                  :checked="todosSelecionados"
+                  @change="toggleSelecionarTodos"
+                  title="Selecionar todos"
+                />
+              </th>
               <th>Número</th>
               <th>Nome</th>
               <th>Status da Votação</th>
@@ -104,6 +119,13 @@
           </thead>
           <tbody>
             <tr v-for="proposta in propostas" :key="proposta.id">
+              <td class="td-checkbox">
+                <input
+                  type="checkbox"
+                  :checked="propostasSelecionadas.includes(proposta.id)"
+                  @change="toggleSelecao(proposta.id)"
+                />
+              </td>
               <td>{{ proposta.numero }}</td>
               <td>{{ proposta.nome }}</td>
               <td>
@@ -156,6 +178,7 @@ const editando = ref(false)
 const busca = ref('')
 const paginaAtual = ref(1)
 const itensPorPagina = 10
+const propostasSelecionadas = ref<number[]>([])
 
 const formulario = ref({
   id: null,
@@ -201,6 +224,12 @@ const paginacao = computed(() => {
   }
 })
 
+// Verificar se todos da página atual estão selecionados
+const todosSelecionados = computed(() => {
+  if (propostas.value.length === 0) return false
+  return propostas.value.every(p => propostasSelecionadas.value.includes(p.id))
+})
+
 onMounted(() => carregarPropostas())
 
 async function carregarPropostas() {
@@ -221,6 +250,59 @@ function mudarPagina(pagina: number) {
 function limparPesquisa() {
   busca.value = ''
   paginaAtual.value = 1
+}
+
+// Funções de seleção múltipla
+function toggleSelecao(id: number) {
+  const index = propostasSelecionadas.value.indexOf(id)
+  if (index > -1) {
+    propostasSelecionadas.value.splice(index, 1)
+  } else {
+    propostasSelecionadas.value.push(id)
+  }
+}
+
+function toggleSelecionarTodos() {
+  if (todosSelecionados.value) {
+    // Desselecionar todos da página atual
+    propostas.value.forEach(p => {
+      const index = propostasSelecionadas.value.indexOf(p.id)
+      if (index > -1) {
+        propostasSelecionadas.value.splice(index, 1)
+      }
+    })
+  } else {
+    // Selecionar todos da página atual
+    propostas.value.forEach(p => {
+      if (!propostasSelecionadas.value.includes(p.id)) {
+        propostasSelecionadas.value.push(p.id)
+      }
+    })
+  }
+}
+
+async function excluirSelecionadas() {
+  if (propostasSelecionadas.value.length === 0) return
+
+  const confirmacao = confirm(
+    `Deseja realmente excluir ${propostasSelecionadas.value.length} proposta(s) selecionada(s)?`
+  )
+
+  if (!confirmacao) return
+
+  try {
+    // Excluir múltiplas propostas
+    await Promise.all(
+      propostasSelecionadas.value.map(id => api.delete(`/propostas/${id}`))
+    )
+
+    propostasSelecionadas.value = []
+    await carregarPropostas()
+    alert('Propostas excluídas com sucesso!')
+  } catch (err) {
+    console.error('Erro ao excluir propostas:', err)
+    alert('Erro ao excluir uma ou mais propostas')
+  }
 }
 
 function editar(proposta: any) {
@@ -490,6 +572,25 @@ async function sair() {
   background: #d68400;
 }
 
+.btn-excluir-massa {
+  background: #c92a2a;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.btn-excluir-massa:hover {
+  background: #a61e1e;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(201, 42, 42, 0.3);
+}
+
 .filtros-container {
   margin-bottom: 1.5rem;
 }
@@ -564,6 +665,21 @@ th {
   background: #f8f9fa;
   font-weight: 600;
   color: #1351b4;
+}
+
+.th-checkbox,
+.td-checkbox {
+  width: 40px;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.th-checkbox input[type="checkbox"],
+.td-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #1351b4;
 }
 
 .badge {
