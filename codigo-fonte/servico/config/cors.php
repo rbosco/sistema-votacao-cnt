@@ -6,7 +6,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:8088', 'http://localhost:8090'],
+    'allowed_origins' => ['http://localhost:8088', 'http://localhost:8090','https://conferencianacional-hml.trabalho.gov.br','https://conferencianacional.trabalho.gov.br'],
 
     'allowed_origins_patterns' => [],
 
