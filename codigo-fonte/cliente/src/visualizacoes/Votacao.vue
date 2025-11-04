@@ -90,7 +90,7 @@
           </div>
 
           <button type="submit" :disabled="enviando || votacaoEncerrada" class="btn-submit">
-            {{ enviando ? 'Enviando...' : votacaoEncerrada ? 'Votação Encerrada' : 'Confirmar Voto' }}
+            {{ enviando ? 'Enviando...' : votacaoEncerrada ? 'Votação Encerrada' : 'CONFIMAR' }}
           </button>
         </form>
 
