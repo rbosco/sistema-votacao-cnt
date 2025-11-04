@@ -23,6 +23,12 @@ class PropostaController extends Controller
             }
         ])->orderBy('created_at', 'desc')->get();
 
+        // Adicionar ID criptografado
+        $propostas->transform(function ($proposta) {
+            $proposta->id_criptografado = encrypt($proposta->id);
+            return $proposta;
+        });
+
         return response()->json($propostas);
     }
 

@@ -92,25 +92,21 @@ class ConfiguracaoController extends Controller
                 'banner.max' => 'O banner não pode ter mais de 5MB.',
             ]);
 
-            // Salvar o arquivo
+            // Converter imagem para base64
             $arquivo = $request->file('banner');
-            $nomeArquivo = 'banner-cnt-' . time() . '.' . $arquivo->getClientOriginalExtension();
+            $imagemConteudo = file_get_contents($arquivo->getRealPath());
+            $base64 = base64_encode($imagemConteudo);
+            $mimeType = $arquivo->getMimeType();
 
-            // Mover o arquivo para public/images
-            $caminhoDestino = public_path('images');
-            if (!file_exists($caminhoDestino)) {
-                mkdir($caminhoDestino, 0755, true);
-            }
+            // Criar data URI
+            $dataUri = 'data:' . $mimeType . ';base64,' . $base64;
 
-            $arquivo->move($caminhoDestino, $nomeArquivo);
-
-            // Atualizar configuração
-            $caminhoRelativo = '/images/' . $nomeArquivo;
-            Configuracao::definir('banner_votacao', $caminhoRelativo);
+            // Salvar no banco de dados
+            Configuracao::definir('banner_votacao', $dataUri);
 
             return response()->json([
                 'mensagem' => 'Banner atualizado com sucesso.',
-                'caminho' => $caminhoRelativo,
+                'banner' => $dataUri,
             ]);
 
         } catch (\Exception $e) {

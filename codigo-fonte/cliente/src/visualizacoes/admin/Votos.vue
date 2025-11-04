@@ -22,29 +22,49 @@
       <div class="filtros">
         <div class="form-group">
           <label>Filtrar por Proposta:</label>
-          <input
-            type="text"
-            v-model="propostaPesquisa"
-            @input="filtrarPropostas"
-            @change="selecionarProposta"
-            list="propostas-list"
-            placeholder="Digite para pesquisar..."
-            class="input-pesquisa"
-          />
-          <datalist id="propostas-list">
-            <option value="">Todas as propostas</option>
-            <option
-              v-for="proposta in propostasFiltradas"
-              :key="proposta.id"
-              :value="`${proposta.numero} - ${proposta.nome}`"
-              :data-id="proposta.id"
+          <div class="select-wrapper">
+            <input
+              type="text"
+              v-model="propostaPesquisa"
+              @input="filtrarPropostas"
+              @focus="mostrarDropdown = true"
+              @blur="ocultarDropdown"
+              placeholder="Digite para pesquisar ou selecione..."
+              class="input-select-pesquisa"
+              autocomplete="off"
             />
-          </datalist>
+            <div v-if="mostrarDropdown && propostasFiltradas.length > 0" class="dropdown-options">
+              <div
+                class="dropdown-option"
+                @mousedown="selecionarPropostaDropdown(null)"
+              >
+                Todas as propostas
+              </div>
+              <div
+                v-for="proposta in propostasFiltradas"
+                :key="proposta.id"
+                class="dropdown-option"
+                @mousedown="selecionarPropostaDropdown(proposta)"
+              >
+                Proposta {{ proposta.numero }} - {{ proposta.nome }}
+              </div>
+            </div>
+          </div>
         </div>
 
         <button @click="exportarCSV" class="btn-exportar">
           📥 Exportar CSV
         </button>
+      </div>
+
+      <div v-if="propostaSelecionada" class="link-resultado-filtro">
+        <a
+          :href="`/resultados/${propostaSelecionada.id_criptografado}`"
+          target="_blank"
+          class="btn-ver-resultado"
+        >
+          🔗 Ver Resultado da Proposta Selecionada
+        </a>
       </div>
 
       <div class="estatisticas-grid">
@@ -122,6 +142,12 @@ const propostas = ref<any[]>([])
 const propostasFiltradas = ref<any[]>([])
 const propostaFiltro = ref('')
 const propostaPesquisa = ref('')
+const mostrarDropdown = ref(false)
+
+const propostaSelecionada = computed(() => {
+  if (!propostaFiltro.value) return null
+  return propostas.value.find(p => p.id === propostaFiltro.value)
+})
 
 const estatisticas = computed(() => {
   const stats = {
@@ -165,22 +191,22 @@ function filtrarPropostas() {
   }
 }
 
-function selecionarProposta() {
-  // Encontrar proposta pelo texto selecionado
-  const textoSelecionado = propostaPesquisa.value
-
-  if (!textoSelecionado || textoSelecionado === 'Todas as propostas') {
+function selecionarPropostaDropdown(proposta: any) {
+  if (!proposta) {
     propostaFiltro.value = ''
+    propostaPesquisa.value = ''
   } else {
-    const proposta = propostas.value.find(p =>
-      `${p.numero} - ${p.nome}` === textoSelecionado
-    )
-    if (proposta) {
-      propostaFiltro.value = proposta.id
-    }
+    propostaFiltro.value = proposta.id
+    propostaPesquisa.value = `${proposta.numero} - ${proposta.nome}`
   }
-
+  mostrarDropdown.value = false
   carregarVotos()
+}
+
+function ocultarDropdown() {
+  setTimeout(() => {
+    mostrarDropdown.value = false
+  }, 200)
 }
 
 async function carregarVotos() {
@@ -447,17 +473,77 @@ th {
   text-decoration: underline;
 }
 
-.input-pesquisa {
+.link-resultado-filtro {
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.btn-ver-resultado {
+  display: inline-block;
+  background: #1351b4;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-ver-resultado:hover {
+  background: #0d3a7f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.input-select-pesquisa {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 1rem;
+  cursor: text;
 }
 
-.input-pesquisa:focus {
+.input-select-pesquisa:focus {
   outline: none;
   border-color: #1351b4;
   box-shadow: 0 0 0 3px rgba(19, 81, 180, 0.1);
+}
+
+.dropdown-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  z-index: 1000;
+  margin-top: 2px;
+}
+
+.dropdown-option {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dropdown-option:hover {
+  background: #f0f4f8;
+}
+
+.dropdown-option:first-child {
+  font-weight: 600;
+  color: #1351b4;
+  border-bottom: 1px solid #e9ecef;
 }
 </style>

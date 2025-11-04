@@ -1,7 +1,7 @@
 <template>
   <div class="resultados-container">
-    <header class="header">
-      <h1>Resultados da Votação</h1>
+    <header class="header" v-if="!carregando">
+      <img :src="bannerUrl" alt="Sistema de Votação CNT" class="banner" />
     </header>
 
     <main class="main-content">
@@ -14,8 +14,7 @@
       </div>
 
       <div v-else class="resultados-card">
-        <h2>{{ proposta?.nome }}</h2>
-        <p class="proposta-numero">Proposta #{{ proposta?.numero }}</p>
+        <h2>Proposta {{ proposta?.numero }}: {{ proposta?.nome }}</h2>
 
         <div class="estatisticas">
           <div class="stat-card sim">
@@ -52,12 +51,17 @@ const route = useRoute()
 
 const proposta = ref<any>(null)
 const resultados = ref<any>({})
+const configuracoes = ref<any>({})
 const carregando = ref(true)
 const erro = ref('')
 
 const total = computed(() => {
   return (resultados.value.sim || 0) +
          (resultados.value.nao || 0)
+})
+
+const bannerUrl = computed(() => {
+  return configuracoes.value.banner_votacao || '/images/banner-cnt.png'
 })
 
 function calcularPercentual(tipo: string) {
@@ -68,11 +72,18 @@ function calcularPercentual(tipo: string) {
 onMounted(async () => {
   try {
     const idCriptografado = route.params.idCriptografado
-    const response = await api.get(`/resultados/${idCriptografado}`)
-    proposta.value = response.data.proposta
-    resultados.value = response.data.resultados
+
+    // Carregar configurações e resultados em paralelo
+    const [resultadosResponse, configResponse] = await Promise.all([
+      api.get(`/propostas/${idCriptografado}/resultados`),
+      api.get('/configuracoes', { skipLoading: true })
+    ])
+
+    proposta.value = resultadosResponse.data.proposta
+    resultados.value = resultadosResponse.data.resultados
+    configuracoes.value = configResponse.data
   } catch (err: any) {
-    erro.value = err.response?.data?.message || 'Erro ao carregar resultados'
+    erro.value = err.response?.data?.mensagem || 'Erro ao carregar resultados'
   } finally {
     carregando.value = false
   }
@@ -88,12 +99,18 @@ onMounted(async () => {
 .header {
   background: #1351b4;
   color: white;
-  padding: 2rem;
+  padding: 0;
   text-align: center;
 }
 
+.header .banner {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
 .main-content {
-  max-width: 1000px;
+  max-width: 800px;
   margin: 2rem auto;
   padding: 0 1rem;
 }
@@ -107,12 +124,9 @@ onMounted(async () => {
 
 .resultados-card h2 {
   color: #1351b4;
-  margin-bottom: 0.5rem;
-}
-
-.proposta-numero {
-  color: #666;
   margin-bottom: 2rem;
+  text-align: center;
+  font-size: 1.8rem;
 }
 
 .estatisticas {
