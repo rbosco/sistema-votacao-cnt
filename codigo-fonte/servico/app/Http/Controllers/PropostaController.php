@@ -69,16 +69,19 @@ class PropostaController extends Controller
         $request->validate([
             'numero' => 'nullable|string|max:255',
             'nome' => 'required|string|max:255',
+            'status' => 'nullable|in:em_votacao,encerrada',
         ], [
             'nome.required' => 'O nome da proposta é obrigatório.',
             'nome.max' => 'O nome não pode ter mais de :max caracteres.',
             'numero.max' => 'O número não pode ter mais de :max caracteres.',
+            'status.in' => 'O status deve ser "em_votacao" ou "encerrada".',
         ]);
 
         $proposta = Proposta::create([
             'numero' => $request->numero,
             'nome' => $request->nome,
             'esta_ativa' => false,
+            'status' => $request->status ?? 'em_votacao',
         ]);
 
         return response()->json($proposta, 201);
@@ -99,10 +102,12 @@ class PropostaController extends Controller
                 'numero' => 'nullable|string|max:255',
                 'nome' => 'required|string|max:255',
                 'esta_ativa' => 'boolean',
+                'status' => 'nullable|in:em_votacao,encerrada',
             ], [
                 'nome.required' => 'O nome da proposta é obrigatório.',
                 'nome.max' => 'O nome não pode ter mais de :max caracteres.',
                 'numero.max' => 'O número não pode ter mais de :max caracteres.',
+                'status.in' => 'O status deve ser "em_votacao" ou "encerrada".',
             ]);
 
             $proposta = Proposta::findOrFail($id);
@@ -123,6 +128,7 @@ class PropostaController extends Controller
                         'numero' => $request->numero,
                         'nome' => $request->nome,
                         'esta_ativa' => true,
+                        'status' => $request->status ?? $proposta->status,
                     ]);
                     \Log::info('Proposta atualizada e ativada', ['proposta' => $proposta->toArray()]);
                 });
@@ -140,6 +146,7 @@ class PropostaController extends Controller
                     'numero' => $request->numero,
                     'nome' => $request->nome,
                     'esta_ativa' => $request->esta_ativa ?? $proposta->esta_ativa,
+                    'status' => $request->status ?? $proposta->status,
                 ]);
             }
 
@@ -246,6 +253,7 @@ class PropostaController extends Controller
         $sheet->setCellValue('A1', 'Número');
         $sheet->setCellValue('B1', 'Nome');
         $sheet->setCellValue('C1', 'Ativa (SIM/NÃO)');
+        $sheet->setCellValue('D1', 'Status (em_votacao/encerrada)');
 
         // Estilizar cabeçalhos
         $headerStyle = [
@@ -256,21 +264,24 @@ class PropostaController extends Controller
             ],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
         ];
-        $sheet->getStyle('A1:C1')->applyFromArray($headerStyle);
+        $sheet->getStyle('A1:D1')->applyFromArray($headerStyle);
 
         // Ajustar largura das colunas
         $sheet->getColumnDimension('A')->setWidth(15);
         $sheet->getColumnDimension('B')->setWidth(50);
         $sheet->getColumnDimension('C')->setWidth(20);
+        $sheet->getColumnDimension('D')->setWidth(30);
 
         // Adicionar exemplos
         $sheet->setCellValue('A2', '1');
         $sheet->setCellValue('B2', 'Proposta de Exemplo 1');
         $sheet->setCellValue('C2', 'NÃO');
+        $sheet->setCellValue('D2', 'em_votacao');
 
         $sheet->setCellValue('A3', '2');
         $sheet->setCellValue('B3', 'Proposta de Exemplo 2');
         $sheet->setCellValue('C3', 'SIM');
+        $sheet->setCellValue('D3', 'encerrada');
 
         // Gerar arquivo
         $writer = new Xlsx($spreadsheet);
@@ -312,6 +323,7 @@ class PropostaController extends Controller
                 $numero = trim($row[0] ?? '');
                 $nome = trim($row[1] ?? '');
                 $ativa = strtoupper(trim($row[2] ?? 'NÃO'));
+                $status = strtolower(trim($row[3] ?? 'em_votacao'));
 
                 // Validar nome obrigatório
                 if (empty($nome)) {
@@ -322,11 +334,17 @@ class PropostaController extends Controller
                 // Converter "SIM/NÃO" para boolean
                 $estaAtiva = ($ativa === 'SIM');
 
+                // Validar e normalizar status
+                if (!in_array($status, ['em_votacao', 'encerrada'])) {
+                    $status = 'em_votacao';
+                }
+
                 // Criar proposta
                 Proposta::create([
                     'numero' => $numero,
                     'nome' => $nome,
-                    'esta_ativa' => $estaAtiva
+                    'esta_ativa' => $estaAtiva,
+                    'status' => $status
                 ]);
 
                 $importadas++;

@@ -22,6 +22,7 @@ class Proposta extends Model
         'numero',
         'nome',
         'esta_ativa',
+        'status',
     ];
 
     /**

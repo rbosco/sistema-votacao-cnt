@@ -52,6 +52,14 @@
               <input v-model="formulario.nome" type="text" required />
             </div>
 
+            <div class="form-group">
+              <label>Status:</label>
+              <select v-model="formulario.status" class="select-status">
+                <option value="em_votacao">Em Votação</option>
+                <option value="encerrada">Encerrada</option>
+              </select>
+            </div>
+
             <div class="form-group-switch">
               <label>Proposta Ativa:</label>
               <Switch v-model="formulario.esta_ativa" />
@@ -73,7 +81,8 @@
             <tr>
               <th>Número</th>
               <th>Nome</th>
-              <th>Status</th>
+              <th>Status da Votação</th>
+              <th>Ativa</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -81,6 +90,11 @@
             <tr v-for="proposta in propostas" :key="proposta.id">
               <td>{{ proposta.numero }}</td>
               <td>{{ proposta.nome }}</td>
+              <td>
+                <span :class="['badge-status', proposta.status]">
+                  {{ formatarStatus(proposta.status) }}
+                </span>
+              </td>
               <td>
                 <Switch
                   v-model="proposta.esta_ativa"
@@ -127,7 +141,8 @@ const formulario = ref({
   id: null,
   numero: '',
   nome: '',
-  esta_ativa: false
+  esta_ativa: false,
+  status: 'em_votacao'
 })
 
 onMounted(() => carregarPropostas())
@@ -193,7 +208,8 @@ async function alternarStatus(proposta: any, novoStatus: boolean) {
     await api.put(`/propostas/${proposta.id}`, {
       numero: proposta.numero,
       nome: proposta.nome,
-      esta_ativa: novoStatus
+      esta_ativa: novoStatus,
+      status: proposta.status
     })
     await carregarPropostas()
   } catch (err) {
@@ -204,6 +220,12 @@ async function alternarStatus(proposta: any, novoStatus: boolean) {
   }
 }
 
+function formatarStatus(status: string) {
+  if (status === 'em_votacao') return 'Em Votação'
+  if (status === 'encerrada') return 'Encerrada'
+  return status
+}
+
 function fecharFormulario() {
   mostrarFormulario.value = false
   editando.value = false
@@ -211,7 +233,8 @@ function fecharFormulario() {
     id: null,
     numero: '',
     nome: '',
-    esta_ativa: false
+    esta_ativa: false,
+    status: 'em_votacao'
   }
 }
 
@@ -422,6 +445,31 @@ th {
 .badge.inativa {
   background: #e9ecef;
   color: #666;
+}
+
+.badge-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.badge-status.em_votacao {
+  background: #e7f5ff;
+  color: #1351b4;
+}
+
+.badge-status.encerrada {
+  background: #e9ecef;
+  color: #666;
+}
+
+.select-status {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
 }
 
 .btn-editar, .btn-excluir {
