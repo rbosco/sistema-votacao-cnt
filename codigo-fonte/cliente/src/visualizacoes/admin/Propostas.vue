@@ -55,6 +55,7 @@
             <div class="form-group">
               <label>Status:</label>
               <select v-model="formulario.status" class="select-status">
+                <option value="nao_iniciada">Não Iniciada</option>
                 <option value="em_votacao">Em Votação</option>
                 <option value="encerrada">Encerrada</option>
               </select>
@@ -91,9 +92,16 @@
               <td>{{ proposta.numero }}</td>
               <td>{{ proposta.nome }}</td>
               <td>
-                <span :class="['badge-status', proposta.status]">
-                  {{ formatarStatus(proposta.status) }}
-                </span>
+                <select
+                  :value="proposta.status"
+                  @change="(e) => alterarStatusVotacao(proposta, (e.target as HTMLSelectElement).value)"
+                  class="select-status-grid"
+                  :class="proposta.status"
+                >
+                  <option value="nao_iniciada">Não Iniciada</option>
+                  <option value="em_votacao">Em Votação</option>
+                  <option value="encerrada">Encerrada</option>
+                </select>
               </td>
               <td>
                 <Switch
@@ -142,7 +150,7 @@ const formulario = ref({
   numero: '',
   nome: '',
   esta_ativa: false,
-  status: 'em_votacao'
+  status: 'nao_iniciada'
 })
 
 onMounted(() => carregarPropostas())
@@ -221,9 +229,27 @@ async function alternarStatus(proposta: any, novoStatus: boolean) {
 }
 
 function formatarStatus(status: string) {
+  if (status === 'nao_iniciada') return 'Não Iniciada'
   if (status === 'em_votacao') return 'Em Votação'
   if (status === 'encerrada') return 'Encerrada'
   return status
+}
+
+async function alterarStatusVotacao(proposta: any, novoStatus: string) {
+  const statusAnterior = proposta.status
+
+  try {
+    await api.patch(`/propostas/${proposta.id}/status`, {
+      status: novoStatus
+    })
+    await carregarPropostas()
+  } catch (err: any) {
+    console.error('Erro ao alterar status:', err)
+    // Reverter o estado local em caso de erro
+    proposta.status = statusAnterior
+    const mensagem = err.response?.data?.message || 'Erro ao alterar status da proposta'
+    alert(mensagem)
+  }
 }
 
 function fecharFormulario() {
@@ -234,7 +260,7 @@ function fecharFormulario() {
     numero: '',
     nome: '',
     esta_ativa: false,
-    status: 'em_votacao'
+    status: 'nao_iniciada'
   }
 }
 
@@ -464,12 +490,50 @@ th {
   color: #666;
 }
 
+.badge-status.nao_iniciada {
+  background: #fff4e6;
+  color: #f59f00;
+}
+
 .select-status {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 1rem;
+}
+
+.select-status-grid {
+  padding: 0.5rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.select-status-grid:hover {
+  border-color: #1351b4;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.select-status-grid.nao_iniciada {
+  background: #fff4e6;
+  color: #f59f00;
+  border-color: #f59f00;
+}
+
+.select-status-grid.em_votacao {
+  background: #e7f5ff;
+  color: #1351b4;
+  border-color: #1351b4;
+}
+
+.select-status-grid.encerrada {
+  background: #e9ecef;
+  color: #666;
+  border-color: #666;
 }
 
 .btn-editar, .btn-excluir {

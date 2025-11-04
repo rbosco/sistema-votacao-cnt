@@ -16,6 +16,12 @@
       <div v-else class="resultados-card">
         <h2>Proposta {{ proposta?.numero }}: {{ proposta?.nome }}</h2>
 
+        <!-- Mostrar mensagem se votação encerrada -->
+        <div v-if="proposta?.status === 'encerrada'" class="status-mensagem encerrada">
+          <div class="status-icone">🔒</div>
+          <div class="status-texto">Votação Encerrada</div>
+        </div>
+
         <div class="estatisticas">
           <div class="stat-card sim">
             <h3>Sim</h3>
@@ -206,5 +212,33 @@ onMounted(async () => {
 
 .voltar a:hover {
   text-decoration: underline;
+}
+
+.status-mensagem {
+  text-align: center;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  border-radius: 12px;
+  background: #f8f9fa;
+}
+
+.status-icone {
+  font-size: 4rem;
+  margin-bottom: 0.5rem;
+}
+
+.status-texto {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.status-mensagem.encerrada {
+  background: #e9ecef;
+  border: 2px solid #666;
+}
+
+.status-mensagem.encerrada .status-texto {
+  color: #666;
 }
 </style>

@@ -18,25 +18,41 @@
       </div>
 
       <div v-else>
-        <!-- Temporizador -->
-        <div v-if="temporizadorAtivo" class="temporizador-container">
-          <div v-if="tempoRestante > 0" class="temporizador ativo">
-            <div class="temporizador-icone">⏱️</div>
-            <div class="temporizador-info">
-              <div class="temporizador-label">Tempo restante para votação:</div>
-              <div class="temporizador-tempo">{{ formatarTempo(tempoRestante) }}</div>
-            </div>
-          </div>
-          <div v-else class="temporizador expirado">
-            <div class="temporizador-icone">⏰</div>
-            <div class="temporizador-info">
-              <div class="temporizador-label">Tempo de votação encerrado</div>
-            </div>
-          </div>
-        </div>
-
         <div class="proposta-card">
           <h2>Proposta {{ proposta.numero }}: {{ proposta.nome }}</h2>
+
+        <!-- Status: Não Iniciada -->
+        <div v-if="proposta.status === 'nao_iniciada'" class="status-mensagem nao-iniciada">
+          <div class="status-icone">⏳</div>
+          <div class="status-texto">Votação Não Iniciada</div>
+          <p class="status-descricao">Aguarde o início da votação.</p>
+        </div>
+
+        <!-- Status: Encerrada -->
+        <div v-else-if="proposta.status === 'encerrada'" class="status-mensagem encerrada">
+          <div class="status-icone">🔒</div>
+          <div class="status-texto">Votação Encerrada</div>
+          <p class="status-descricao">Esta votação foi encerrada.</p>
+        </div>
+
+        <!-- Status: Em Votação -->
+        <div v-else-if="proposta.status === 'em_votacao'">
+          <!-- Temporizador -->
+          <div v-if="temporizadorAtivo" class="temporizador-container">
+            <div v-if="tempoRestante > 0" class="temporizador ativo">
+              <div class="temporizador-icone">⏱️</div>
+              <div class="temporizador-info">
+                <div class="temporizador-label">Tempo restante para votação:</div>
+                <div class="temporizador-tempo">{{ formatarTempo(tempoRestante) }}</div>
+              </div>
+            </div>
+            <div v-else class="temporizador expirado">
+              <div class="temporizador-icone">⏰</div>
+              <div class="temporizador-info">
+                <div class="temporizador-label">Tempo de votação encerrado</div>
+              </div>
+            </div>
+          </div>
 
         <form @submit.prevent="enviarVoto" class="form-voto">
           <div class="form-group">
@@ -82,6 +98,9 @@
             {{ mensagem }}
           </div>
         </div>
+        <!-- Fim do status em_votacao -->
+        </div>
+        <!-- Fim do proposta-card -->
       </div>
     </main>
   </div>
@@ -146,19 +165,35 @@ onMounted(async () => {
     configuracoes.value = configResponse.data
     tempoRestante.value = configResponse.data.tempo_restante_segundos || 0
 
-    // Atualizar tempo restante a cada segundo se o temporizador está ativo
-    if (temporizadorAtivo.value) {
-      intervalo = setInterval(async () => {
-        try {
-          // skipLoading: true para não mostrar loading durante polling
-          const response = await api.get('/configuracoes', { skipLoading: true })
-          configuracoes.value = response.data
-          tempoRestante.value = response.data.tempo_restante_segundos || 0
-        } catch (err) {
-          console.error('Erro ao atualizar temporizador:', err)
+    // Polling para atualização em tempo real
+    // Verifica mudanças a cada 3 segundos
+    intervalo = setInterval(async () => {
+      try {
+        // skipLoading: true para não mostrar loading durante polling
+        const [propostaResponse, configResponse] = await Promise.all([
+          api.get('/propostas/ativa', { skipLoading: true }),
+          api.get('/configuracoes', { skipLoading: true })
+        ])
+
+        const novaProposta = propostaResponse.data
+        const novasConfiguracoes = configResponse.data
+
+        // Verificar se o status da proposta mudou
+        if (proposta.value && novaProposta &&
+            proposta.value.id === novaProposta.id &&
+            proposta.value.status !== novaProposta.status) {
+          // Status mudou - recarregar página para aplicar nova visualização
+          proposta.value = novaProposta
+        } else {
+          proposta.value = novaProposta
         }
-      }, 1000)
-    }
+
+        configuracoes.value = novasConfiguracoes
+        tempoRestante.value = novasConfiguracoes.tempo_restante_segundos || 0
+      } catch (err) {
+        console.error('Erro ao atualizar dados:', err)
+      }
+    }, 3000) // Verificar a cada 3 segundos
   } catch (err: any) {
     erro.value = err.response?.data?.message || 'Erro ao carregar proposta'
   } finally {
@@ -437,5 +472,48 @@ function formatarTempo(segundos: number): string {
   font-size: 1.2rem;
   font-weight: 600;
   color: #c92a2a;
+}
+
+.status-mensagem {
+  text-align: center;
+  padding: 3rem 2rem;
+  margin: 2rem 0;
+  border-radius: 12px;
+  background: #f8f9fa;
+}
+
+.status-icone {
+  font-size: 5rem;
+  margin-bottom: 1rem;
+}
+
+.status-texto {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.status-descricao {
+  font-size: 1.1rem;
+  color: #666;
+  margin: 0;
+}
+
+.status-mensagem.nao-iniciada {
+  background: #fff4e6;
+  border: 2px solid #f59f00;
+}
+
+.status-mensagem.nao-iniciada .status-texto {
+  color: #f59f00;
+}
+
+.status-mensagem.encerrada {
+  background: #e9ecef;
+  border: 2px solid #666;
+}
+
+.status-mensagem.encerrada .status-texto {
+  color: #666;
 }
 </style>
