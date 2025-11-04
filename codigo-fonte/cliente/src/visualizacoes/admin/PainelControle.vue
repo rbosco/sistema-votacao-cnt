@@ -42,7 +42,7 @@
         <div class="stat-card">
           <div class="stat-icon">👥</div>
           <h3>Usuários Cadastrados</h3>
-          <p class="stat-number">{{ estatisticas.total_usuarios }}</p>
+          <p class="stat-number">{{ estatisticas.usuarios_cadastrados }}</p>
         </div>
       </div>
 
@@ -80,12 +80,12 @@ const estatisticas = ref({
   total_propostas: 0,
   propostas_ativas: 0,
   total_votos: 0,
-  total_usuarios: 0
+  usuarios_cadastrados: 0
 })
 
 onMounted(async () => {
   try {
-    const response = await api.get('/estatisticas')
+    const response = await api.get('/dashboard')
     estatisticas.value = response.data
   } catch (err) {
     console.error('Erro ao carregar estatísticas:', err)

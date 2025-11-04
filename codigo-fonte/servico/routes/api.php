@@ -23,6 +23,7 @@ Route::get('/configuracoes', [ConfiguracaoController::class, 'index']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/sair', [AutenticacaoController::class, 'sair']);
     Route::get('/eu', [AutenticacaoController::class, 'eu']);
+    Route::get('/dashboard', [PropostaController::class, 'dashboard']);
     Route::get('/usuarios', [UsuarioController::class, 'index']);
     Route::post('/usuarios', [UsuarioController::class, 'armazenar']);
     Route::get('/usuarios/{id}', [UsuarioController::class, 'mostrar']);
@@ -31,6 +32,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/propostas', [PropostaController::class, 'index']);
     Route::post('/propostas', [PropostaController::class, 'armazenar']);
     Route::put('/propostas/{id}', [PropostaController::class, 'atualizar']);
+    Route::patch('/propostas/{id}/status', [PropostaController::class, 'atualizarStatus']);
     Route::delete('/propostas/{id}', [PropostaController::class, 'destruir']);
     Route::post('/propostas/{id}/ativar', [PropostaController::class, 'ativar']);
     Route::post('/propostas/{id}/desativar', [PropostaController::class, 'desativar']);
