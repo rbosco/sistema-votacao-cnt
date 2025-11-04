@@ -26,7 +26,6 @@
         <div class="campo-pesquisa">
           <input
             v-model="busca"
-            @input="pesquisar"
             type="text"
             placeholder="🔍 Pesquisar por nome ou CPF..."
             class="input-pesquisa"
@@ -115,7 +114,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useArmazenamentoAutenticacao } from '@/armazenamentos/autenticacao'
 import api from '@/servicos/api'
@@ -126,18 +125,12 @@ import Switch from '@/componentes/Switch.vue'
 const router = useRouter()
 const armazenamentoAuth = useArmazenamentoAutenticacao()
 
-const usuarios = ref<any[]>([])
+const todosUsuarios = ref<any[]>([])
 const mostrarFormulario = ref(false)
 const editando = ref(false)
 const busca = ref('')
-let timeoutPesquisa: any = null
-const paginacao = ref({
-  current_page: 1,
-  last_page: 1,
-  from: 0,
-  to: 0,
-  total: 0
-})
+const paginaAtual = ref(1)
+const itensPorPagina = 10
 
 const formulario = ref({
   id: null,
@@ -153,48 +146,62 @@ function aplicarMascaraCPF(event: Event) {
   formulario.value.cpf = (event.target as HTMLInputElement).value
 }
 
+// Filtrar usuários localmente
+const usuariosFiltrados = computed(() => {
+  if (!busca.value) {
+    return todosUsuarios.value
+  }
+
+  const termo = busca.value.toLowerCase()
+  return todosUsuarios.value.filter(usuario => {
+    const nome = (usuario.nome || '').toLowerCase()
+    const cpf = (usuario.cpf || '').toString()
+    return nome.includes(termo) || cpf.includes(termo)
+  })
+})
+
+// Paginação local
+const usuarios = computed(() => {
+  const inicio = (paginaAtual.value - 1) * itensPorPagina
+  const fim = inicio + itensPorPagina
+  return usuariosFiltrados.value.slice(inicio, fim)
+})
+
+const paginacao = computed(() => {
+  const total = usuariosFiltrados.value.length
+  const totalPaginas = Math.ceil(total / itensPorPagina)
+  const inicio = total > 0 ? (paginaAtual.value - 1) * itensPorPagina + 1 : 0
+  const fim = Math.min(paginaAtual.value * itensPorPagina, total)
+
+  return {
+    current_page: paginaAtual.value,
+    last_page: totalPaginas,
+    from: inicio,
+    to: fim,
+    total: total
+  }
+})
+
 onMounted(() => carregarUsuarios())
 
-async function carregarUsuarios(pagina = 1) {
+async function carregarUsuarios() {
   try {
-    const params: any = {
-      page: pagina,
-      per_page: 10
-    }
-
-    if (busca.value) {
-      params.busca = busca.value
-    }
-
-    const response = await api.get('/usuarios', { params })
-    usuarios.value = response.data.data
-    paginacao.value = {
-      current_page: response.data.current_page,
-      last_page: response.data.last_page,
-      from: response.data.from,
-      to: response.data.to,
-      total: response.data.total
-    }
+    // Carregar TODOS os dados sem paginação
+    const response = await api.get('/usuarios')
+    todosUsuarios.value = response.data
+    paginaAtual.value = 1
   } catch (err) {
     console.error('Erro ao carregar usuários:', err)
   }
 }
 
 function mudarPagina(pagina: number) {
-  carregarUsuarios(pagina)
-}
-
-function pesquisar() {
-  // Debounce: aguarda 500ms após parar de digitar
-  clearTimeout(timeoutPesquisa)
-  timeoutPesquisa = setTimeout(() => {
-    carregarUsuarios(1) // Volta para a primeira página ao pesquisar
-  }, 500)
+  paginaAtual.value = pagina
 }
 
 function limparPesquisa() {
   busca.value = ''
-  carregarUsuarios(1)
+  paginaAtual.value = 1
 }
 
 function editar(usuario: any) {

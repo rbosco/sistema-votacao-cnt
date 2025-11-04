@@ -41,7 +41,6 @@
         <div class="campo-pesquisa">
           <input
             v-model="busca"
-            @input="pesquisar"
             type="text"
             placeholder="🔍 Pesquisar por número ou nome..."
             class="input-pesquisa"
@@ -141,7 +140,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useArmazenamentoAutenticacao } from '@/armazenamentos/autenticacao'
 import api from '@/servicos/api'
@@ -151,18 +150,12 @@ import Switch from '@/componentes/Switch.vue'
 const router = useRouter()
 const armazenamentoAuth = useArmazenamentoAutenticacao()
 
-const propostas = ref<any[]>([])
+const todasPropostas = ref<any[]>([])
 const mostrarFormulario = ref(false)
 const editando = ref(false)
 const busca = ref('')
-let timeoutPesquisa: any = null
-const paginacao = ref({
-  current_page: 1,
-  last_page: 1,
-  from: 0,
-  to: 0,
-  total: 0
-})
+const paginaAtual = ref(1)
+const itensPorPagina = 10
 
 const formulario = ref({
   id: null,
@@ -172,48 +165,62 @@ const formulario = ref({
   status: 'nao_iniciada'
 })
 
+// Filtrar propostas localmente
+const propostasFiltradas = computed(() => {
+  if (!busca.value) {
+    return todasPropostas.value
+  }
+
+  const termo = busca.value.toLowerCase()
+  return todasPropostas.value.filter(proposta => {
+    const numero = (proposta.numero || '').toString().toLowerCase()
+    const nome = (proposta.nome || '').toLowerCase()
+    return numero.includes(termo) || nome.includes(termo)
+  })
+})
+
+// Paginação local
+const propostas = computed(() => {
+  const inicio = (paginaAtual.value - 1) * itensPorPagina
+  const fim = inicio + itensPorPagina
+  return propostasFiltradas.value.slice(inicio, fim)
+})
+
+const paginacao = computed(() => {
+  const total = propostasFiltradas.value.length
+  const totalPaginas = Math.ceil(total / itensPorPagina)
+  const inicio = total > 0 ? (paginaAtual.value - 1) * itensPorPagina + 1 : 0
+  const fim = Math.min(paginaAtual.value * itensPorPagina, total)
+
+  return {
+    current_page: paginaAtual.value,
+    last_page: totalPaginas,
+    from: inicio,
+    to: fim,
+    total: total
+  }
+})
+
 onMounted(() => carregarPropostas())
 
-async function carregarPropostas(pagina = 1) {
+async function carregarPropostas() {
   try {
-    const params: any = {
-      page: pagina,
-      per_page: 10
-    }
-
-    if (busca.value) {
-      params.busca = busca.value
-    }
-
-    const response = await api.get('/propostas', { params })
-    propostas.value = response.data.data
-    paginacao.value = {
-      current_page: response.data.current_page,
-      last_page: response.data.last_page,
-      from: response.data.from,
-      to: response.data.to,
-      total: response.data.total
-    }
+    // Carregar TODOS os dados sem paginação
+    const response = await api.get('/propostas')
+    todasPropostas.value = response.data
+    paginaAtual.value = 1
   } catch (err) {
     console.error('Erro ao carregar propostas:', err)
   }
 }
 
 function mudarPagina(pagina: number) {
-  carregarPropostas(pagina)
-}
-
-function pesquisar() {
-  // Debounce: aguarda 500ms após parar de digitar
-  clearTimeout(timeoutPesquisa)
-  timeoutPesquisa = setTimeout(() => {
-    carregarPropostas(1) // Volta para a primeira página ao pesquisar
-  }, 500)
+  paginaAtual.value = pagina
 }
 
 function limparPesquisa() {
   busca.value = ''
-  carregarPropostas(1)
+  paginaAtual.value = 1
 }
 
 function editar(proposta: any) {
