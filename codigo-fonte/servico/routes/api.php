@@ -34,7 +34,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/propostas/{id}', [PropostaController::class, 'destruir']);
     Route::post('/propostas/{id}/ativar', [PropostaController::class, 'ativar']);
     Route::post('/propostas/{id}/desativar', [PropostaController::class, 'desativar']);
+    Route::get('/propostas/modelo-excel/download', [PropostaController::class, 'downloadModelo']);
+    Route::post('/propostas/importar-excel', [PropostaController::class, 'importarExcel']);
     Route::get('/votos', [VotoController::class, 'index']);
+    Route::get('/votos/exportar-excel', [VotoController::class, 'exportarExcel']);
     Route::get('/propostas/{id}/votos', [VotoController::class, 'obterPorProposta']);
     Route::put('/configuracoes', [ConfiguracaoController::class, 'atualizar']);
     Route::post('/configuracoes/banner', [ConfiguracaoController::class, 'uploadBanner']);

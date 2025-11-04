@@ -5,15 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\Proposta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class PropostaController extends Controller
 {
     /**
      * Listar todas as propostas
      */
-    public function index()
+    public function index(Request $request)
     {
-        $propostas = Proposta::withCount([
+        $query = Proposta::withCount([
             'votos',
             'votos as total_votos_sim' => function ($query) {
                 $query->where('voto', 1);
@@ -21,13 +26,27 @@ class PropostaController extends Controller
             'votos as total_votos_nao' => function ($query) {
                 $query->where('voto', 0);
             }
-        ])->orderBy('created_at', 'desc')->get();
+        ])->orderBy('created_at', 'desc');
 
-        // Adicionar ID criptografado
-        $propostas->transform(function ($proposta) {
-            $proposta->id_criptografado = encrypt($proposta->id);
-            return $proposta;
-        });
+        // Se não forneceu page, retorna todos; senão, retorna paginado
+        if (!$request->has('page')) {
+            $propostas = $query->get();
+
+            // Adicionar ID criptografado
+            $propostas->transform(function ($proposta) {
+                $proposta->id_criptografado = encrypt($proposta->id);
+                return $proposta;
+            });
+        } else {
+            $perPage = $request->get('per_page', 10);
+            $propostas = $query->paginate($perPage);
+
+            // Adicionar ID criptografado
+            $propostas->getCollection()->transform(function ($proposta) {
+                $proposta->id_criptografado = encrypt($proposta->id);
+                return $proposta;
+            });
+        }
 
         return response()->json($propostas);
     }
@@ -212,6 +231,117 @@ class PropostaController extends Controller
             return response()->json([
                 'mensagem' => 'Proposta não encontrada.',
             ], 404);
+        }
+    }
+
+    /**
+     * Download do modelo Excel para importação de propostas
+     */
+    public function downloadModelo()
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Configurar cabeçalhos
+        $sheet->setCellValue('A1', 'Número');
+        $sheet->setCellValue('B1', 'Nome');
+        $sheet->setCellValue('C1', 'Ativa (SIM/NÃO)');
+
+        // Estilizar cabeçalhos
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '1351b4']
+            ],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
+        ];
+        $sheet->getStyle('A1:C1')->applyFromArray($headerStyle);
+
+        // Ajustar largura das colunas
+        $sheet->getColumnDimension('A')->setWidth(15);
+        $sheet->getColumnDimension('B')->setWidth(50);
+        $sheet->getColumnDimension('C')->setWidth(20);
+
+        // Adicionar exemplos
+        $sheet->setCellValue('A2', '1');
+        $sheet->setCellValue('B2', 'Proposta de Exemplo 1');
+        $sheet->setCellValue('C2', 'NÃO');
+
+        $sheet->setCellValue('A3', '2');
+        $sheet->setCellValue('B3', 'Proposta de Exemplo 2');
+        $sheet->setCellValue('C3', 'SIM');
+
+        // Gerar arquivo
+        $writer = new Xlsx($spreadsheet);
+        $fileName = 'modelo_importacao_propostas.xlsx';
+        $tempFile = tempnam(sys_get_temp_dir(), $fileName);
+
+        $writer->save($tempFile);
+
+        return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Importar propostas de arquivo Excel
+     */
+    public function importarExcel(Request $request)
+    {
+        $request->validate([
+            'arquivo' => 'required|file|mimes:xlsx,xls'
+        ]);
+
+        try {
+            $arquivo = $request->file('arquivo');
+            $spreadsheet = IOFactory::load($arquivo->getRealPath());
+            $sheet = $spreadsheet->getActiveSheet();
+            $rows = $sheet->toArray();
+
+            $importadas = 0;
+            $erros = [];
+
+            // Pular cabeçalho (linha 1)
+            for ($i = 1; $i < count($rows); $i++) {
+                $row = $rows[$i];
+
+                // Validar se a linha tem dados
+                if (empty($row[0]) && empty($row[1])) {
+                    continue;
+                }
+
+                $numero = trim($row[0] ?? '');
+                $nome = trim($row[1] ?? '');
+                $ativa = strtoupper(trim($row[2] ?? 'NÃO'));
+
+                // Validar nome obrigatório
+                if (empty($nome)) {
+                    $erros[] = "Linha " . ($i + 1) . ": Nome é obrigatório";
+                    continue;
+                }
+
+                // Converter "SIM/NÃO" para boolean
+                $estaAtiva = ($ativa === 'SIM');
+
+                // Criar proposta
+                Proposta::create([
+                    'numero' => $numero,
+                    'nome' => $nome,
+                    'esta_ativa' => $estaAtiva
+                ]);
+
+                $importadas++;
+            }
+
+            return response()->json([
+                'mensagem' => "Importação concluída! {$importadas} proposta(s) importada(s).",
+                'importadas' => $importadas,
+                'erros' => $erros
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'mensagem' => 'Erro ao importar arquivo: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

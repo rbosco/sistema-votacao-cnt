@@ -52,9 +52,14 @@
           </div>
         </div>
 
-        <button @click="exportarCSV" class="btn-exportar">
-          📥 Exportar CSV
-        </button>
+        <div class="botoes-exportar">
+          <button @click="exportarCSV" class="btn-exportar">
+            📥 Exportar CSV
+          </button>
+          <button @click="exportarExcel" class="btn-exportar btn-excel">
+            📊 Exportar Excel
+          </button>
+        </div>
       </div>
 
       <div v-if="propostaSelecionada" class="link-resultado-filtro">
@@ -122,6 +127,8 @@
         <div v-if="votos.length === 0" class="sem-dados">
           Nenhum voto registrado
         </div>
+
+        <Paginacao :paginacao="paginacao" @mudar-pagina="mudarPagina" />
       </div>
     </main>
   </div>
@@ -133,6 +140,7 @@ import { useRouter } from 'vue-router'
 import { useArmazenamentoAutenticacao } from '@/armazenamentos/autenticacao'
 import api from '@/servicos/api'
 import { formatarCPF } from '@/utilidades/formatadores'
+import Paginacao from '@/componentes/Paginacao.vue'
 
 const router = useRouter()
 const armazenamentoAuth = useArmazenamentoAutenticacao()
@@ -143,6 +151,13 @@ const propostasFiltradas = ref<any[]>([])
 const propostaFiltro = ref('')
 const propostaPesquisa = ref('')
 const mostrarDropdown = ref(false)
+const paginacao = ref({
+  current_page: 1,
+  last_page: 1,
+  from: 0,
+  to: 0,
+  total: 0
+})
 
 const propostaSelecionada = computed(() => {
   if (!propostaFiltro.value) return null
@@ -157,8 +172,14 @@ const estatisticas = computed(() => {
   }
 
   votos.value.forEach(voto => {
-    if (voto.voto === 1) stats.sim++
-    else if (voto.voto === 0) stats.nao++
+    // Normalizar o voto para lidar com boolean, number e string
+    const votoNormalizado = voto.voto === true || voto.voto === 1 || voto.voto === '1'
+
+    if (votoNormalizado) {
+      stats.sim++
+    } else {
+      stats.nao++
+    }
     stats.total++
   })
 
@@ -209,17 +230,33 @@ function ocultarDropdown() {
   }, 200)
 }
 
-async function carregarVotos() {
+async function carregarVotos(pagina = 1) {
   try {
-    const params = propostaFiltro.value
-      ? { proposta_id: propostaFiltro.value }
-      : {}
+    const params: any = {
+      page: pagina,
+      per_page: 10
+    }
+
+    if (propostaFiltro.value) {
+      params.proposta_id = propostaFiltro.value
+    }
 
     const response = await api.get('/votos', { params })
-    votos.value = response.data
+    votos.value = response.data.data
+    paginacao.value = {
+      current_page: response.data.current_page,
+      last_page: response.data.last_page,
+      from: response.data.from,
+      to: response.data.to,
+      total: response.data.total
+    }
   } catch (err) {
     console.error('Erro ao carregar votos:', err)
   }
+}
+
+function mudarPagina(pagina: number) {
+  carregarVotos(pagina)
 }
 
 function formatarData(data: string) {
@@ -259,6 +296,31 @@ function exportarCSV() {
   link.href = URL.createObjectURL(blob)
   link.download = `votos_${new Date().toISOString().split('T')[0]}.csv`
   link.click()
+}
+
+async function exportarExcel() {
+  try {
+    const params: any = {}
+    if (propostaFiltro.value) {
+      params.proposta_id = propostaFiltro.value
+    }
+
+    const response = await api.get('/votos/exportar-excel', {
+      params,
+      responseType: 'blob'
+    })
+
+    const blob = new Blob([response.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `relatorio_votos_${new Date().toISOString().split('T')[0]}.xlsx`
+    link.click()
+  } catch (err) {
+    console.error('Erro ao exportar Excel:', err)
+    alert('Erro ao exportar arquivo Excel')
+  }
 }
 
 async function sair() {
@@ -360,6 +422,12 @@ async function sair() {
   font-size: 1rem;
 }
 
+.botoes-exportar {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: 1rem;
+}
+
 .btn-exportar {
   background: #2b8a3e;
   color: white;
@@ -368,7 +436,21 @@ async function sair() {
   border-radius: 4px;
   cursor: pointer;
   white-space: nowrap;
-  margin-left: 1rem;
+  transition: all 0.2s;
+}
+
+.btn-exportar:hover {
+  background: #1f6629;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.btn-exportar.btn-excel {
+  background: #217346;
+}
+
+.btn-exportar.btn-excel:hover {
+  background: #185c37;
 }
 
 .estatisticas-grid {

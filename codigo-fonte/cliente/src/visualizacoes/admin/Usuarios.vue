@@ -50,11 +50,9 @@
               <small v-if="editando">Deixe em branco para manter a senha atual</small>
             </div>
 
-            <div class="form-group">
-              <label>
-                <input v-model="formulario.is_admin" type="checkbox" />
-                Administrador
-              </label>
+            <div class="form-group-switch">
+              <label>Administrador:</label>
+              <Switch v-model="formulario.is_admin" />
             </div>
 
             <div class="form-actions">
@@ -82,9 +80,10 @@
               <td>{{ usuario.nome }}</td>
               <td>{{ formatarCPF(usuario.cpf) }}</td>
               <td>
-                <span :class="['badge', usuario.is_admin ? 'admin' : 'normal']">
-                  {{ usuario.is_admin ? 'Admin' : 'Usuário' }}
-                </span>
+                <Switch
+                  v-model="usuario.is_admin"
+                  @update:modelValue="(valor) => alternarAdmin(usuario, valor)"
+                />
               </td>
               <td>
                 <button @click="editar(usuario)" class="btn-editar">Editar</button>
@@ -93,6 +92,8 @@
             </tr>
           </tbody>
         </table>
+
+        <Paginacao :paginacao="paginacao" @mudar-pagina="mudarPagina" />
       </div>
     </main>
   </div>
@@ -104,6 +105,8 @@ import { useRouter } from 'vue-router'
 import { useArmazenamentoAutenticacao } from '@/armazenamentos/autenticacao'
 import api from '@/servicos/api'
 import { formatarCPF, aplicarMascaraCPF as aplicarMascara, removerFormatacaoCPF } from '@/utilidades/formatadores'
+import Paginacao from '@/componentes/Paginacao.vue'
+import Switch from '@/componentes/Switch.vue'
 
 const router = useRouter()
 const armazenamentoAuth = useArmazenamentoAutenticacao()
@@ -111,6 +114,13 @@ const armazenamentoAuth = useArmazenamentoAutenticacao()
 const usuarios = ref<any[]>([])
 const mostrarFormulario = ref(false)
 const editando = ref(false)
+const paginacao = ref({
+  current_page: 1,
+  last_page: 1,
+  from: 0,
+  to: 0,
+  total: 0
+})
 
 const formulario = ref({
   id: null,
@@ -126,15 +136,31 @@ function aplicarMascaraCPF(event: Event) {
   formulario.value.cpf = (event.target as HTMLInputElement).value
 }
 
-onMounted(carregarUsuarios)
+onMounted(() => carregarUsuarios())
 
-async function carregarUsuarios() {
+async function carregarUsuarios(pagina = 1) {
   try {
-    const response = await api.get('/usuarios')
-    usuarios.value = response.data
+    const response = await api.get('/usuarios', {
+      params: {
+        page: pagina,
+        per_page: 10
+      }
+    })
+    usuarios.value = response.data.data
+    paginacao.value = {
+      current_page: response.data.current_page,
+      last_page: response.data.last_page,
+      from: response.data.from,
+      to: response.data.to,
+      total: response.data.total
+    }
   } catch (err) {
     console.error('Erro ao carregar usuários:', err)
   }
+}
+
+function mudarPagina(pagina: number) {
+  carregarUsuarios(pagina)
 }
 
 function editar(usuario: any) {
@@ -178,6 +204,24 @@ async function excluir(id: number) {
     await carregarUsuarios()
   } catch (err) {
     console.error('Erro ao excluir usuário:', err)
+  }
+}
+
+async function alternarAdmin(usuario: any, novoStatus: boolean) {
+  try {
+    const dados = {
+      nome: usuario.nome,
+      cpf: removerFormatacaoCPF(usuario.cpf),
+      is_admin: novoStatus
+    }
+
+    await api.put(`/usuarios/${usuario.id}`, dados)
+    await carregarUsuarios()
+  } catch (err) {
+    console.error('Erro ao alterar status admin:', err)
+    // Reverter o estado local em caso de erro
+    usuario.is_admin = !novoStatus
+    alert('Erro ao alterar status de administrador')
   }
 }
 
@@ -386,6 +430,17 @@ th {
 .form-group small {
   color: #666;
   font-size: 0.875rem;
+}
+
+.form-group-switch {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.form-group-switch label {
+  font-weight: 600;
+  margin: 0;
 }
 
 .form-actions {

@@ -11,9 +11,10 @@ class UsuarioController extends Controller
     /**
      * Listar todos os usuários
      */
-    public function index()
+    public function index(Request $request)
     {
-        $usuarios = Usuario::orderBy('nome')->get();
+        $perPage = $request->get('per_page', 10);
+        $usuarios = Usuario::orderBy('nome')->paginate($perPage);
         return response()->json($usuarios);
     }
 

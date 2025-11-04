@@ -7,6 +7,10 @@ use App\Models\Voto;
 use App\Models\Configuracao;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class VotoController extends Controller
 {
@@ -77,6 +81,8 @@ class VotoController extends Controller
      */
     public function index(Request $request)
     {
+        $perPage = $request->get('per_page', 10);
+
         $query = Voto::with('proposta')
             ->orderBy('votado_em', 'desc');
 
@@ -85,10 +91,10 @@ class VotoController extends Controller
             $query->where('proposta_id', $request->proposta_id);
         }
 
-        $votos = $query->get();
+        $votos = $query->paginate($perPage);
 
         // Adicionar ID criptografado da proposta
-        $votos->transform(function ($voto) {
+        $votos->getCollection()->transform(function ($voto) {
             if ($voto->proposta_id) {
                 $voto->proposta_id_criptografado = encrypt($voto->proposta_id);
             }
@@ -108,5 +114,88 @@ class VotoController extends Controller
             ->get();
 
         return response()->json($votos);
+    }
+
+    /**
+     * Exportar votos para Excel
+     */
+    public function exportarExcel(Request $request)
+    {
+        $query = Voto::with('proposta')
+            ->orderBy('votado_em', 'desc');
+
+        // Filtrar por proposta se fornecido
+        if ($request->has('proposta_id') && $request->proposta_id) {
+            $query->where('proposta_id', $request->proposta_id);
+        }
+
+        $votos = $query->get();
+
+        // Criar nova planilha
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Configurar cabeçalhos
+        $sheet->setCellValue('A1', 'Data/Hora');
+        $sheet->setCellValue('B1', 'Proposta');
+        $sheet->setCellValue('C1', 'CPF');
+        $sheet->setCellValue('D1', 'Voto');
+
+        // Estilizar cabeçalhos
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '1351b4']
+            ],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
+        ];
+        $sheet->getStyle('A1:D1')->applyFromArray($headerStyle);
+
+        // Ajustar largura das colunas
+        $sheet->getColumnDimension('A')->setWidth(20);
+        $sheet->getColumnDimension('B')->setWidth(40);
+        $sheet->getColumnDimension('C')->setWidth(15);
+        $sheet->getColumnDimension('D')->setWidth(10);
+
+        // Adicionar dados
+        $row = 2;
+        foreach ($votos as $voto) {
+            $dataHora = $voto->votado_em ? date('d/m/Y H:i:s', strtotime($voto->votado_em)) : '-';
+            $proposta = $voto->proposta ? "{$voto->proposta->numero} - {$voto->proposta->nome}" : '-';
+            $cpf = $this->formatarCPF($voto->cpf_votante);
+            $votoTexto = $voto->voto ? 'Sim' : 'Não';
+
+            $sheet->setCellValue('A' . $row, $dataHora);
+            $sheet->setCellValue('B' . $row, $proposta);
+            $sheet->setCellValue('C' . $row, $cpf);
+            $sheet->setCellValue('D' . $row, $votoTexto);
+
+            $row++;
+        }
+
+        // Gerar arquivo
+        $writer = new Xlsx($spreadsheet);
+        $fileName = 'relatorio_votos_' . date('Y-m-d_H-i-s') . '.xlsx';
+        $tempFile = tempnam(sys_get_temp_dir(), $fileName);
+
+        $writer->save($tempFile);
+
+        return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Formatar CPF
+     */
+    private function formatarCPF($cpf)
+    {
+        if (strlen($cpf) !== 11) {
+            return $cpf;
+        }
+
+        return substr($cpf, 0, 3) . '.' .
+               substr($cpf, 3, 3) . '.' .
+               substr($cpf, 6, 3) . '-' .
+               substr($cpf, 9, 2);
     }
 }

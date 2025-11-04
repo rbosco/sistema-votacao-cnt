@@ -17,9 +17,24 @@
     <main class="main-content">
       <header class="header">
         <h1>Gerenciar Propostas</h1>
-        <button @click="mostrarFormulario = true" class="btn-novo">
-          + Nova Proposta
-        </button>
+        <div class="botoes-header">
+          <button @click="downloadModelo" class="btn-download-modelo">
+            📥 Baixar Modelo
+          </button>
+          <label for="arquivo-importacao" class="btn-importar">
+            📤 Importar Excel
+            <input
+              id="arquivo-importacao"
+              type="file"
+              accept=".xlsx,.xls"
+              @change="importarExcel"
+              style="display: none"
+            />
+          </label>
+          <button @click="mostrarFormulario = true" class="btn-novo">
+            + Nova Proposta
+          </button>
+        </div>
       </header>
 
       <div v-if="mostrarFormulario" class="modal">
@@ -37,11 +52,9 @@
               <input v-model="formulario.nome" type="text" required />
             </div>
 
-            <div class="form-group">
-              <label>
-                <input v-model="formulario.esta_ativa" type="checkbox" />
-                Proposta Ativa
-              </label>
+            <div class="form-group-switch">
+              <label>Proposta Ativa:</label>
+              <Switch v-model="formulario.esta_ativa" />
             </div>
 
             <div class="form-actions">
@@ -69,9 +82,10 @@
               <td>{{ proposta.numero }}</td>
               <td>{{ proposta.nome }}</td>
               <td>
-                <span :class="['badge', proposta.esta_ativa ? 'ativa' : 'inativa']">
-                  {{ proposta.esta_ativa ? 'Ativa' : 'Inativa' }}
-                </span>
+                <Switch
+                  v-model="proposta.esta_ativa"
+                  @update:modelValue="(valor) => alternarStatus(proposta, valor)"
+                />
               </td>
               <td>
                 <button @click="editar(proposta)" class="btn-editar">Editar</button>
@@ -80,6 +94,8 @@
             </tr>
           </tbody>
         </table>
+
+        <Paginacao :paginacao="paginacao" @mudar-pagina="mudarPagina" />
       </div>
     </main>
   </div>
@@ -90,6 +106,8 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useArmazenamentoAutenticacao } from '@/armazenamentos/autenticacao'
 import api from '@/servicos/api'
+import Paginacao from '@/componentes/Paginacao.vue'
+import Switch from '@/componentes/Switch.vue'
 
 const router = useRouter()
 const armazenamentoAuth = useArmazenamentoAutenticacao()
@@ -97,6 +115,13 @@ const armazenamentoAuth = useArmazenamentoAutenticacao()
 const propostas = ref<any[]>([])
 const mostrarFormulario = ref(false)
 const editando = ref(false)
+const paginacao = ref({
+  current_page: 1,
+  last_page: 1,
+  from: 0,
+  to: 0,
+  total: 0
+})
 
 const formulario = ref({
   id: null,
@@ -105,15 +130,31 @@ const formulario = ref({
   esta_ativa: false
 })
 
-onMounted(carregarPropostas)
+onMounted(() => carregarPropostas())
 
-async function carregarPropostas() {
+async function carregarPropostas(pagina = 1) {
   try {
-    const response = await api.get('/propostas')
-    propostas.value = response.data
+    const response = await api.get('/propostas', {
+      params: {
+        page: pagina,
+        per_page: 10
+      }
+    })
+    propostas.value = response.data.data
+    paginacao.value = {
+      current_page: response.data.current_page,
+      last_page: response.data.last_page,
+      from: response.data.from,
+      to: response.data.to,
+      total: response.data.total
+    }
   } catch (err) {
     console.error('Erro ao carregar propostas:', err)
   }
+}
+
+function mudarPagina(pagina: number) {
+  carregarPropostas(pagina)
 }
 
 function editar(proposta: any) {
@@ -147,6 +188,22 @@ async function excluir(id: number) {
   }
 }
 
+async function alternarStatus(proposta: any, novoStatus: boolean) {
+  try {
+    await api.put(`/propostas/${proposta.id}`, {
+      numero: proposta.numero,
+      nome: proposta.nome,
+      esta_ativa: novoStatus
+    })
+    await carregarPropostas()
+  } catch (err) {
+    console.error('Erro ao alterar status:', err)
+    // Reverter o estado local em caso de erro
+    proposta.esta_ativa = !novoStatus
+    alert('Erro ao alterar status da proposta')
+  }
+}
+
 function fecharFormulario() {
   mostrarFormulario.value = false
   editando.value = false
@@ -155,6 +212,58 @@ function fecharFormulario() {
     numero: '',
     nome: '',
     esta_ativa: false
+  }
+}
+
+async function downloadModelo() {
+  try {
+    const response = await api.get('/propostas/modelo-excel/download', {
+      responseType: 'blob'
+    })
+
+    const blob = new Blob([response.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = 'modelo_importacao_propostas.xlsx'
+    link.click()
+  } catch (err) {
+    console.error('Erro ao baixar modelo:', err)
+    alert('Erro ao baixar modelo Excel')
+  }
+}
+
+async function importarExcel(event: Event) {
+  const input = event.target as HTMLInputElement
+  const arquivo = input.files?.[0]
+
+  if (!arquivo) return
+
+  try {
+    const formData = new FormData()
+    formData.append('arquivo', arquivo)
+
+    const response = await api.post('/propostas/importar-excel', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+
+    alert(response.data.mensagem)
+
+    if (response.data.erros && response.data.erros.length > 0) {
+      console.warn('Erros na importação:', response.data.erros)
+    }
+
+    await carregarPropostas()
+
+    // Limpar o input
+    input.value = ''
+  } catch (err: any) {
+    console.error('Erro ao importar Excel:', err)
+    alert(err.response?.data?.mensagem || 'Erro ao importar arquivo Excel')
+    input.value = ''
   }
 }
 
@@ -231,13 +340,47 @@ async function sair() {
   margin: 0;
 }
 
-.btn-novo {
+.botoes-header {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-novo,
+.btn-download-modelo,
+.btn-importar {
   background: #1351b4;
   color: white;
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.btn-novo:hover,
+.btn-download-modelo:hover,
+.btn-importar:hover {
+  background: #0d3a7f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.btn-download-modelo {
+  background: #2b8a3e;
+}
+
+.btn-download-modelo:hover {
+  background: #1f6629;
+}
+
+.btn-importar {
+  background: #f59f00;
+  display: inline-block;
+}
+
+.btn-importar:hover {
+  background: #d68400;
 }
 
 .tabela-container {
@@ -346,6 +489,17 @@ th {
   padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
+}
+
+.form-group-switch {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.form-group-switch label {
+  font-weight: 600;
+  margin: 0;
 }
 
 .form-actions {
