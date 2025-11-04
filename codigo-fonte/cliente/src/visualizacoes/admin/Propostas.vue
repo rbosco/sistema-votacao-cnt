@@ -158,8 +158,8 @@ function fecharFormulario() {
   }
 }
 
-function sair() {
-  armazenamentoAuth.sair()
+async function sair() {
+  await armazenamentoAuth.sair()
   router.push('/login')
 }
 </script>

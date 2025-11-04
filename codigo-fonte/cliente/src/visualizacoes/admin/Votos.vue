@@ -261,8 +261,8 @@ function exportarCSV() {
   link.click()
 }
 
-function sair() {
-  armazenamentoAuth.sair()
+async function sair() {
+  await armazenamentoAuth.sair()
   router.push('/login')
 }
 </script>
