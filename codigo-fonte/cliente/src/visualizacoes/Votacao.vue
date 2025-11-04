@@ -165,6 +165,11 @@ onMounted(async () => {
       api.get('/configuracoes')
     ])
 
+    console.log('Resposta da API - proposta ativa:', propostaResponse.data)
+    console.log('Tipo da resposta:', typeof propostaResponse.data)
+    console.log('É null?', propostaResponse.data === null)
+    console.log('É undefined?', propostaResponse.data === undefined)
+
     proposta.value = propostaResponse.data
     configuracoes.value = configResponse.data
     tempoRestante.value = configResponse.data.tempo_restante_segundos || 0
