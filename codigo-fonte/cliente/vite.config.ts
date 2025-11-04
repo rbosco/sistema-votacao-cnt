@@ -13,6 +13,10 @@ export default defineConfig({
     host: true,              // ou '0.0.0.0' — aceita conexões externas (docker)
     port: 8088,              // mesma porta que você abre no navegador
     strictPort: true,        // se 8088 estiver ocupada, ele não muda sozinho
+    allowedHosts: [
+      'conferencianacional-hml.trabalho.gov.br',
+      'conferencianacional.trabalho.gov.br',
+    ],
     watch: {
       usePolling: true,      // importante para docker/wsl
       interval: 100,         // pode aumentar se quiser
