@@ -26,7 +26,18 @@ class PropostaController extends Controller
             'votos as total_votos_nao' => function ($query) {
                 $query->where('voto', 0);
             }
-        ])->orderBy('created_at', 'desc');
+        ]);
+
+        // Filtro de pesquisa
+        if ($request->has('busca') && !empty($request->busca)) {
+            $busca = $request->busca;
+            $query->where(function($q) use ($busca) {
+                $q->where('numero', 'like', "%{$busca}%")
+                  ->orWhere('nome', 'like', "%{$busca}%");
+            });
+        }
+
+        $query->orderBy('created_at', 'desc');
 
         // Se não forneceu page, retorna todos; senão, retorna paginado
         if (!$request->has('page')) {

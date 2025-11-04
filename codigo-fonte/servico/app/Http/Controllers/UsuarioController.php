@@ -13,8 +13,21 @@ class UsuarioController extends Controller
      */
     public function index(Request $request)
     {
+        $query = Usuario::query();
+
+        // Filtro de pesquisa
+        if ($request->has('busca') && !empty($request->busca)) {
+            $busca = $request->busca;
+            $query->where(function($q) use ($busca) {
+                $q->where('nome', 'like', "%{$busca}%")
+                  ->orWhere('cpf', 'like', "%{$busca}%");
+            });
+        }
+
+        $query->orderBy('nome');
+
         $perPage = $request->get('per_page', 10);
-        $usuarios = Usuario::orderBy('nome')->paginate($perPage);
+        $usuarios = $query->paginate($perPage);
         return response()->json($usuarios);
     }
 

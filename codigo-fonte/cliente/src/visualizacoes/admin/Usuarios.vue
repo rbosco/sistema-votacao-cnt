@@ -22,6 +22,21 @@
         </button>
       </header>
 
+      <div class="filtros-container">
+        <div class="campo-pesquisa">
+          <input
+            v-model="busca"
+            @input="pesquisar"
+            type="text"
+            placeholder="🔍 Pesquisar por nome ou CPF..."
+            class="input-pesquisa"
+          />
+          <button v-if="busca" @click="limparPesquisa" class="btn-limpar-pesquisa">
+            ✕
+          </button>
+        </div>
+      </div>
+
       <div v-if="mostrarFormulario" class="modal">
         <div class="modal-content">
           <h2>{{ editando ? 'Editar' : 'Novo' }} Usuário</h2>
@@ -114,6 +129,8 @@ const armazenamentoAuth = useArmazenamentoAutenticacao()
 const usuarios = ref<any[]>([])
 const mostrarFormulario = ref(false)
 const editando = ref(false)
+const busca = ref('')
+let timeoutPesquisa: any = null
 const paginacao = ref({
   current_page: 1,
   last_page: 1,
@@ -140,12 +157,16 @@ onMounted(() => carregarUsuarios())
 
 async function carregarUsuarios(pagina = 1) {
   try {
-    const response = await api.get('/usuarios', {
-      params: {
-        page: pagina,
-        per_page: 10
-      }
-    })
+    const params: any = {
+      page: pagina,
+      per_page: 10
+    }
+
+    if (busca.value) {
+      params.busca = busca.value
+    }
+
+    const response = await api.get('/usuarios', { params })
     usuarios.value = response.data.data
     paginacao.value = {
       current_page: response.data.current_page,
@@ -161,6 +182,19 @@ async function carregarUsuarios(pagina = 1) {
 
 function mudarPagina(pagina: number) {
   carregarUsuarios(pagina)
+}
+
+function pesquisar() {
+  // Debounce: aguarda 500ms após parar de digitar
+  clearTimeout(timeoutPesquisa)
+  timeoutPesquisa = setTimeout(() => {
+    carregarUsuarios(1) // Volta para a primeira página ao pesquisar
+  }, 500)
+}
+
+function limparPesquisa() {
+  busca.value = ''
+  carregarUsuarios(1)
 }
 
 function editar(usuario: any) {
@@ -464,6 +498,58 @@ th {
 
 .btn-cancelar {
   background: #e9ecef;
+  color: #333;
+}
+
+.filtros-container {
+  margin-bottom: 1.5rem;
+}
+
+.campo-pesquisa {
+  position: relative;
+  max-width: 500px;
+}
+
+.input-pesquisa {
+  width: 100%;
+  padding: 0.75rem 2.5rem 0.75rem 1rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.input-pesquisa:focus {
+  outline: none;
+  border-color: #1351b4;
+  box-shadow: 0 0 0 3px rgba(19, 81, 180, 0.1);
+}
+
+.input-pesquisa::placeholder {
+  color: #999;
+}
+
+.btn-limpar-pesquisa {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #e9ecef;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #666;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.btn-limpar-pesquisa:hover {
+  background: #dee2e6;
   color: #333;
 }
 </style>
