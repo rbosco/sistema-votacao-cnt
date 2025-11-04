@@ -13,8 +13,12 @@
         <p>{{ erro }}</p>
       </div>
 
-      <div v-else-if="!proposta" class="info">
-        <p>Não há propostas ativas no momento.</p>
+      <div v-else-if="!proposta" class="proposta-card">
+        <div class="status-mensagem nao-iniciada">
+          <div class="status-icone">⏳</div>
+          <div class="status-texto">Votação Não Iniciada</div>
+          <p class="status-descricao">Não há propostas ativas no momento.</p>
+        </div>
       </div>
 
       <div v-else>
