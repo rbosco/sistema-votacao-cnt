@@ -84,6 +84,7 @@
               <th>Nome</th>
               <th>Status da Votação</th>
               <th>Ativa</th>
+              <th>Data de Cadastro</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -109,6 +110,7 @@
                   @update:modelValue="(valor) => alternarStatus(proposta, valor)"
                 />
               </td>
+              <td>{{ formatarData(proposta.created_at) }}</td>
               <td>
                 <button @click="editar(proposta)" class="btn-editar">Editar</button>
                 <button @click="excluir(proposta.id)" class="btn-excluir">Excluir</button>
@@ -233,6 +235,21 @@ function formatarStatus(status: string) {
   if (status === 'em_votacao') return 'Em Votação'
   if (status === 'encerrada') return 'Encerrada'
   return status
+}
+
+function formatarData(data: string) {
+  if (!data) return '-'
+
+  const dataObj = new Date(data)
+
+  // Formatar como DD/MM/YYYY HH:MM
+  const dia = String(dataObj.getDate()).padStart(2, '0')
+  const mes = String(dataObj.getMonth() + 1).padStart(2, '0')
+  const ano = dataObj.getFullYear()
+  const horas = String(dataObj.getHours()).padStart(2, '0')
+  const minutos = String(dataObj.getMinutes()).padStart(2, '0')
+
+  return `${dia}/${mes}/${ano} ${horas}:${minutos}`
 }
 
 async function alterarStatusVotacao(proposta: any, novoStatus: string) {
