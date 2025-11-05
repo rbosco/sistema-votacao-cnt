@@ -60,6 +60,21 @@
 
         <form @submit.prevent="enviarVoto" class="form-voto">
           <div class="form-group">
+            <label for="bancada">Bancada</label>
+            <select
+              v-model="formulario.bancada"
+              id="bancada"
+              required
+              class="select-bancada"
+            >
+              <option value="">Selecione sua bancada</option>
+              <option value="Trabalhadores">Trabalhadores</option>
+              <option value="Empregadores">Empregadores</option>
+              <option value="Governo">Governo</option>
+            </select>
+          </div>
+
+          <div class="form-group">
             <label for="cpf">CPF</label>
             <input
               v-model="formulario.cpf_votante"
@@ -94,7 +109,7 @@
           </div>
 
           <button type="submit" :disabled="enviando || votacaoEncerrada" class="btn-submit">
-            {{ enviando ? 'Enviando...' : votacaoEncerrada ? 'Votação Encerrada' : 'CONFIMAR' }}
+            {{ enviando ? 'Enviando...' : votacaoEncerrada ? 'Votação Encerrada' : 'CONFIRMAR' }}
           </button>
         </form>
 
@@ -138,11 +153,13 @@ const bannerUrl = computed(() => {
 })
 
 const formulario = ref<{
+  bancada: string
   cpf_votante: string
   nome_votante: string
   nome_sindicato: string
   voto: number | null
 }>({
+  bancada: '',
   cpf_votante: '',
   nome_votante: '',
   nome_sindicato: '',
@@ -245,6 +262,7 @@ async function enviarVoto() {
 
     // Limpar formulário
     formulario.value = {
+      bancada: '',
       cpf_votante: '',
       nome_votante: '',
       nome_sindicato: '',
@@ -325,11 +343,23 @@ function formatarTempo(segundos: number): string {
   color: #333;
 }
 
-.form-group input[type="text"] {
+.form-group input[type="text"],
+.form-group select {
   padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 1rem;
+}
+
+.select-bancada {
+  background: white;
+  cursor: pointer;
+}
+
+.select-bancada:focus {
+  outline: none;
+  border-color: #1351b4;
+  box-shadow: 0 0 0 3px rgba(19, 81, 180, 0.1);
 }
 
 .botoes-voto {

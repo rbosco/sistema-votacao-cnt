@@ -96,6 +96,7 @@
               <th>Data/Hora</th>
               <th>Proposta</th>
               <th>Votante (CPF)</th>
+              <th>Bancada</th>
               <th>Voto</th>
               <th>Resultado</th>
             </tr>
@@ -105,6 +106,11 @@
               <td>{{ formatarData(voto.votado_em) }}</td>
               <td>{{ voto.proposta?.numero }} - {{ voto.proposta?.nome }}</td>
               <td>{{ formatarCPF(voto.cpf_votante) }}</td>
+              <td>
+                <span class="badge-bancada">
+                  {{ voto.bancada || '-' }}
+                </span>
+              </td>
               <td>
                 <span :class="['badge-voto', obterClasseVoto(voto.voto)]">
                   {{ formatarVoto(voto.voto) }}
@@ -533,6 +539,15 @@ th {
 .badge-voto.0 {
   background: #ffe3e3;
   color: #c92a2a;
+}
+
+.badge-bancada {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #e7f5ff;
+  color: #1351b4;
 }
 
 .sem-dados {

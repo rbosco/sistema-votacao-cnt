@@ -21,11 +21,14 @@ class VotoController extends Controller
     {
         $request->validate([
             'cpf_votante' => 'required|string|size:11',
+            'bancada' => 'required|in:Trabalhadores,Empregadores,Governo',
             'voto' => 'required|in:0,1',
             'proposta_id' => 'required|exists:propostas,id',
         ], [
             'cpf_votante.required' => 'O CPF é obrigatório.',
             'cpf_votante.size' => 'O CPF deve ter 11 dígitos.',
+            'bancada.required' => 'A bancada é obrigatória.',
+            'bancada.in' => 'A bancada deve ser Trabalhadores, Empregadores ou Governo.',
             'voto.required' => 'O voto é obrigatório.',
             'voto.in' => 'O voto deve ser 0 (Não) ou 1 (Sim).',
             'proposta_id.required' => 'A proposta é obrigatória.',
@@ -66,6 +69,7 @@ class VotoController extends Controller
         $voto = Voto::create([
             'proposta_id' => $proposta->id,
             'cpf_votante' => $request->cpf_votante,
+            'bancada' => $request->bancada,
             'voto' => (int) $request->voto,
             'votado_em' => now(),
         ]);
@@ -139,7 +143,8 @@ class VotoController extends Controller
         $sheet->setCellValue('A1', 'Data/Hora');
         $sheet->setCellValue('B1', 'Proposta');
         $sheet->setCellValue('C1', 'CPF');
-        $sheet->setCellValue('D1', 'Voto');
+        $sheet->setCellValue('D1', 'Bancada');
+        $sheet->setCellValue('E1', 'Voto');
 
         // Estilizar cabeçalhos
         $headerStyle = [
@@ -150,13 +155,14 @@ class VotoController extends Controller
             ],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
         ];
-        $sheet->getStyle('A1:D1')->applyFromArray($headerStyle);
+        $sheet->getStyle('A1:E1')->applyFromArray($headerStyle);
 
         // Ajustar largura das colunas
         $sheet->getColumnDimension('A')->setWidth(20);
         $sheet->getColumnDimension('B')->setWidth(40);
         $sheet->getColumnDimension('C')->setWidth(15);
-        $sheet->getColumnDimension('D')->setWidth(10);
+        $sheet->getColumnDimension('D')->setWidth(18);
+        $sheet->getColumnDimension('E')->setWidth(10);
 
         // Adicionar dados
         $row = 2;
@@ -164,12 +170,14 @@ class VotoController extends Controller
             $dataHora = $voto->votado_em ? date('d/m/Y H:i:s', strtotime($voto->votado_em)) : '-';
             $proposta = $voto->proposta ? "{$voto->proposta->numero} - {$voto->proposta->nome}" : '-';
             $cpf = $this->formatarCPF($voto->cpf_votante);
+            $bancada = $voto->bancada ?? '-';
             $votoTexto = $voto->voto ? 'Sim' : 'Não';
 
             $sheet->setCellValue('A' . $row, $dataHora);
             $sheet->setCellValue('B' . $row, $proposta);
             $sheet->setCellValue('C' . $row, $cpf);
-            $sheet->setCellValue('D' . $row, $votoTexto);
+            $sheet->setCellValue('D' . $row, $bancada);
+            $sheet->setCellValue('E' . $row, $votoTexto);
 
             $row++;
         }
