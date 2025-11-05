@@ -2,19 +2,17 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copiar e configurar entrypoint primeiro
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+# Copiar arquivos de configuração para cache de dependências
+COPY package.json package-lock.json ./
 
-# Copiar arquivos de configuração
-COPY package*.json ./
-
-# Instalar dependências (será sobrescrito pelo volume se node_modules já existir)
-RUN npm install
+# Instalar dependências
+RUN npm ci --no-audit --no-fund
 
 # Copiar código-fonte
 COPY . .
 
-EXPOSE 3000
+# Expor porta do Vite dev server
+EXPOSE 8088
 
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+# Comando para iniciar servidor de desenvolvimento
+CMD ["npm", "run", "dev"]

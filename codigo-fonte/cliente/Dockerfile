@@ -1,18 +1,21 @@
-FROM node:20-alpine
-
+# ---------- STAGE 1: build ----------
+FROM node:20-alpine AS builder
 WORKDIR /app
-
-# Copiar arquivos de configuração para cache de dependências
-COPY package.json package-lock.json ./
-
-# Instalar dependências
+COPY package*.json ./
 RUN npm ci --no-audit --no-fund
-
-# Copiar código-fonte
 COPY . .
+RUN npm run build
 
-# Expor porta do Vite dev server
+# ---------- STAGE 2: runtime ----------
+FROM nginx:1.27-alpine AS runtime
+
+RUN rm -f /etc/nginx/conf.d/default.conf
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD wget -qO- http://127.0.0.1:8088/ >/dev/null 2>&1 || exit 1
+
 EXPOSE 8088
-
-# Comando para iniciar servidor de desenvolvimento
-CMD ["npm", "run", "dev"]
+CMD ["nginx", "-g", "daemon off;"]
