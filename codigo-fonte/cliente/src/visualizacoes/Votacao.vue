@@ -62,15 +62,19 @@
           <div class="form-group">
             <label for="bancada">Bancada</label>
             <select
-              v-model="formulario.bancada"
+              v-model="formulario.bancada_id"
               id="bancada"
               required
               class="select-bancada"
             >
-              <option value="">Selecione sua bancada</option>
-              <option value="Trabalhadores">Trabalhadores</option>
-              <option value="Empregadores">Empregadores</option>
-              <option value="Governo">Governo</option>
+              <option :value="null">Selecione sua bancada</option>
+              <option
+                v-for="bancada in bancadas"
+                :key="bancada.id"
+                :value="bancada.id"
+              >
+                {{ bancada.nome }}
+              </option>
             </select>
           </div>
 
@@ -138,6 +142,7 @@ const mensagem = ref('')
 const mensagemTipo = ref<'sucesso' | 'erro'>('sucesso')
 const configuracoes = ref<any>({})
 const tempoRestante = ref(0)
+const bancadas = ref<any[]>([])
 
 const temporizadorAtivo = computed(() => {
   return configuracoes.value.temporizador_ativo === '1' &&
@@ -153,13 +158,13 @@ const bannerUrl = computed(() => {
 })
 
 const formulario = ref<{
-  bancada: string
+  bancada_id: number | null
   cpf_votante: string
   nome_votante: string
   nome_sindicato: string
   voto: number | null
 }>({
-  bancada: '',
+  bancada_id: null,
   cpf_votante: '',
   nome_votante: '',
   nome_sindicato: '',
@@ -176,10 +181,11 @@ let intervalo: any = null
 
 onMounted(async () => {
   try {
-    // Carregar proposta e configurações
-    const [propostaResponse, configResponse] = await Promise.all([
+    // Carregar proposta, configurações e bancadas
+    const [propostaResponse, configResponse, bancadasResponse] = await Promise.all([
       api.get('/propostas/ativa'),
-      api.get('/configuracoes')
+      api.get('/configuracoes'),
+      api.get('/bancadas')
     ])
 
     console.log('Resposta da API - proposta ativa:', propostaResponse.data)
@@ -196,6 +202,7 @@ onMounted(async () => {
     }
     configuracoes.value = configResponse.data
     tempoRestante.value = configResponse.data.tempo_restante_segundos || 0
+    bancadas.value = bancadasResponse.data.data || []
 
     // Polling para atualização em tempo real
     // Verifica mudanças a cada 3 segundos
@@ -262,7 +269,7 @@ async function enviarVoto() {
 
     // Limpar formulário
     formulario.value = {
-      bancada: '',
+      bancada_id: null,
       cpf_votante: '',
       nome_votante: '',
       nome_sindicato: '',

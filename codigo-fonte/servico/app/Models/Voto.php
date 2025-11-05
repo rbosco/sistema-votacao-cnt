@@ -20,7 +20,7 @@ class Voto extends Model
     protected $fillable = [
         'proposta_id',
         'cpf_votante',
-        'bancada',
+        'bancada_id',
         'voto',
         'votado_em',
     ];
@@ -44,6 +44,14 @@ class Voto extends Model
     public function proposta(): BelongsTo
     {
         return $this->belongsTo(Proposta::class, 'proposta_id');
+    }
+
+    /**
+     * Obter a bancada do voto
+     */
+    public function bancada(): BelongsTo
+    {
+        return $this->belongsTo(Bancada::class, 'bancada_id');
     }
 
     /**

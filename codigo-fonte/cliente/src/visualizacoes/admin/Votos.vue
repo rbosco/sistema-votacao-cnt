@@ -108,7 +108,7 @@
               <td>{{ formatarCPF(voto.cpf_votante) }}</td>
               <td>
                 <span class="badge-bancada">
-                  {{ voto.bancada || '-' }}
+                  {{ voto.bancada?.nome || '-' }}
                 </span>
               </td>
               <td>

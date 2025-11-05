@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AutenticacaoController;
+use App\Http\Controllers\BancadaController;
 use App\Http\Controllers\PropostaController;
 use App\Http\Controllers\VotoController;
 use App\Http\Controllers\UsuarioController;
@@ -19,6 +20,7 @@ Route::post('/votar', [VotoController::class, 'votar']);
 Route::get('/propostas/ativa', [PropostaController::class, 'obterAtiva']);
 Route::get('/propostas/{idCriptografado}/resultados', [PropostaController::class, 'obterResultados']);
 Route::get('/configuracoes', [ConfiguracaoController::class, 'index']);
+Route::get('/bancadas', [BancadaController::class, 'index']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/sair', [AutenticacaoController::class, 'sair']);

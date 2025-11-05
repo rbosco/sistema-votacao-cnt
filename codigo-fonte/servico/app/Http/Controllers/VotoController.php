@@ -21,14 +21,14 @@ class VotoController extends Controller
     {
         $request->validate([
             'cpf_votante' => 'required|string|size:11',
-            'bancada' => 'required|in:Trabalhadores,Empregadores,Governo',
+            'bancada_id' => 'required|exists:bancadas,id',
             'voto' => 'required|in:0,1',
             'proposta_id' => 'required|exists:propostas,id',
         ], [
             'cpf_votante.required' => 'O CPF é obrigatório.',
             'cpf_votante.size' => 'O CPF deve ter 11 dígitos.',
-            'bancada.required' => 'A bancada é obrigatória.',
-            'bancada.in' => 'A bancada deve ser Trabalhadores, Empregadores ou Governo.',
+            'bancada_id.required' => 'A bancada é obrigatória.',
+            'bancada_id.exists' => 'A bancada selecionada não existe.',
             'voto.required' => 'O voto é obrigatório.',
             'voto.in' => 'O voto deve ser 0 (Não) ou 1 (Sim).',
             'proposta_id.required' => 'A proposta é obrigatória.',
@@ -69,7 +69,7 @@ class VotoController extends Controller
         $voto = Voto::create([
             'proposta_id' => $proposta->id,
             'cpf_votante' => $request->cpf_votante,
-            'bancada' => $request->bancada,
+            'bancada_id' => $request->bancada_id,
             'voto' => (int) $request->voto,
             'votado_em' => now(),
         ]);
@@ -87,7 +87,7 @@ class VotoController extends Controller
     {
         $perPage = $request->get('per_page', 10);
 
-        $query = Voto::with('proposta')
+        $query = Voto::with(['proposta', 'bancada'])
             ->orderBy('votado_em', 'desc');
 
         // Filtrar por proposta se fornecido
@@ -125,7 +125,7 @@ class VotoController extends Controller
      */
     public function exportarExcel(Request $request)
     {
-        $query = Voto::with('proposta')
+        $query = Voto::with(['proposta', 'bancada'])
             ->orderBy('votado_em', 'desc');
 
         // Filtrar por proposta se fornecido
@@ -170,7 +170,7 @@ class VotoController extends Controller
             $dataHora = $voto->votado_em ? date('d/m/Y H:i:s', strtotime($voto->votado_em)) : '-';
             $proposta = $voto->proposta ? "{$voto->proposta->numero} - {$voto->proposta->nome}" : '-';
             $cpf = $this->formatarCPF($voto->cpf_votante);
-            $bancada = $voto->bancada ?? '-';
+            $bancada = $voto->bancada ? $voto->bancada->nome : '-';
             $votoTexto = $voto->voto ? 'Sim' : 'Não';
 
             $sheet->setCellValue('A' . $row, $dataHora);
