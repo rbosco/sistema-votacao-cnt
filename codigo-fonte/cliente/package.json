@@ -4,8 +4,12 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "vite --mode development",
+    "dev:homolog": "vite --mode homologation",
+    "dev:prod": "vite --mode production",
+    "build": "vite build --mode development",
+    "build:homolog": "vite build --mode homologation",
+    "build:prod": "vite build --mode production",
     "preview": "vite preview"
   },
   "dependencies": {

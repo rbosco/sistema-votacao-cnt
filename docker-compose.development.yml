@@ -1,0 +1,72 @@
+services:
+  websrt:
+    container_name: websrt-dev
+    build:
+      context: ./codigo-fonte/cliente
+      dockerfile: Dockerfile
+      args:
+        - BUILD_MODE=development
+    expose:
+      - "8088"
+    ports:
+      - "8088:8088"
+    volumes:
+      - ./codigo-fonte/cliente:/app
+      - /app/node_modules
+    networks:
+      - srt-network
+    restart: unless-stopped
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - NODE_ENV=development
+
+  phpsrt:
+    container_name: phpsrt-dev
+    build:
+      context: ./codigo-fonte/servico
+      dockerfile: Dockerfile
+    ports:
+      - "8090:80"
+    expose:
+      - "9000"
+    volumes:
+      - ./codigo-fonte/servico:/var/www/html
+      - ./codigo-fonte/servico/docker_mte/extra/development.ini:/usr/local/etc/php/conf.d/zzz-development.ini
+      - vendor-data:/var/www/html/vendor
+      - storage-data:/var/www/html/storage
+    networks:
+      - srt-network
+    restart: unless-stopped
+    environment:
+      - APP_ENV=development
+      - APP_DEBUG=true
+    env_file:
+      - ./codigo-fonte/servico/.env.development
+
+  sqlserver:
+    container_name: sqlserver-dev
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=SistemaVotacao@2024
+      - MSSQL_PID=Developer
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - srt-network
+    restart: unless-stopped
+
+networks:
+  srt-network:
+    driver: bridge
+
+volumes:
+  vendor-data:
+    driver: local
+  storage-data:
+    driver: local
+  sqlserver-data:
+    driver: local

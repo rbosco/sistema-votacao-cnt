@@ -6,9 +6,16 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => [
+        env('FRONTEND_URL', 'http://localhost:8088'),
+        'http://localhost:8088',
+        'https://conferencianacional.trabalho.gov.br',
+        'https://conferencianacional-hml.trabalho.gov.br',
+    ],
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '/^https?:\/\/.*\.trabalho\.gov\.br$/',
+    ],
 
     'allowed_headers' => ['*'],
 
@@ -16,6 +23,6 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    'supports_credentials' => true,
 
 ];

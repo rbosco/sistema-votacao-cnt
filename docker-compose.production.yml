@@ -1,0 +1,49 @@
+services:
+  websrt:
+    container_name: websrt-prod
+    build:
+      context: ./codigo-fonte/cliente
+      dockerfile: Dockerfile.production
+      args:
+        - BUILD_MODE=production
+    expose:
+      - "8088"
+    ports:
+      - "8088:8088"
+    networks:
+      - srt-network
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+
+  phpsrt:
+    container_name: phpsrt-prod
+    build:
+      context: ./codigo-fonte/servico
+      dockerfile: Dockerfile
+    ports:
+      - "8090:80"
+    expose:
+      - "9000"
+    volumes:
+      - ./codigo-fonte/servico:/var/www/html
+      - vendor-data:/var/www/html/vendor
+      - storage-data:/var/www/html/storage
+    networks:
+      - srt-network
+    restart: unless-stopped
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+    env_file:
+      - ./codigo-fonte/servico/.env.production
+
+networks:
+  srt-network:
+    driver: bridge
+
+volumes:
+  vendor-data:
+    driver: local
+  storage-data:
+    driver: local
