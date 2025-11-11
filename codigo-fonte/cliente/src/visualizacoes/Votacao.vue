@@ -23,7 +23,7 @@
 
       <div v-else>
         <div class="proposta-card">
-          <h2>Proposta {{ proposta.numero }}: {{ proposta.nome }}</h2>
+          <h2>{{ proposta.nome }}</h2>
 
         <!-- Status: Não Iniciada -->
         <div v-if="proposta.status === 'nao_iniciada'" class="status-mensagem nao-iniciada">
@@ -66,6 +66,7 @@
               id="bancada"
               required
               class="select-bancada"
+              :disabled="bancadaBloqueada"
             >
               <option :value="null">Selecione sua bancada</option>
               <option
@@ -101,14 +102,6 @@
                 <span class="icone">👍</span>
                 <span class="texto">Sim</span>
               </button>
-              <button
-                type="button"
-                @click="formulario.voto = 0"
-                :class="['btn-voto', 'btn-nao', { ativo: formulario.voto === 0 }]"
-              >
-                <span class="icone">👎</span>
-                <span class="texto">Não</span>
-              </button>
             </div>
           </div>
 
@@ -143,14 +136,15 @@ const mensagemTipo = ref<'sucesso' | 'erro'>('sucesso')
 const configuracoes = ref<any>({})
 const tempoRestante = ref(0)
 const bancadas = ref<any[]>([])
+const bancadaBloqueada = ref(false)
 
 const temporizadorAtivo = computed(() => {
-  return configuracoes.value.temporizador_ativo === '1' &&
-         configuracoes.value.temporizador_ativo_verificado === true
+  return proposta.value?.temporizador_ativo === true
 })
 
 const votacaoEncerrada = computed(() => {
-  return temporizadorAtivo.value && tempoRestante.value <= 0
+  return (temporizadorAtivo.value && tempoRestante.value <= 0) ||
+         proposta.value?.atingiu_limite === true
 })
 
 const bannerUrl = computed(() => {
@@ -199,41 +193,51 @@ onMounted(async () => {
       proposta.value = null
     } else {
       proposta.value = propostaResponse.data
+      // Atualizar tempo restante da proposta
+      tempoRestante.value = propostaResponse.data.tempo_restante_segundos || 0
     }
     configuracoes.value = configResponse.data
-    tempoRestante.value = configResponse.data.tempo_restante_segundos || 0
     bancadas.value = bancadasResponse.data.data || []
+
+    // Verificar query parameter 'bancada' na URL
+    const urlParams = new URLSearchParams(window.location.search)
+    const bancadaParam = urlParams.get('bancada')
+    if (bancadaParam) {
+      const bancadaId = parseInt(bancadaParam)
+      if (bancadaId && bancadas.value.some(b => b.id === bancadaId)) {
+        formulario.value.bancada_id = bancadaId
+        bancadaBloqueada.value = true // Bloquear select quando vier da URL
+      }
+    }
 
     // Polling para atualização em tempo real
     // Verifica mudanças a cada 3 segundos
     intervalo = setInterval(async () => {
       try {
         // skipLoading: true para não mostrar loading durante polling
-        const [propostaResponse, configResponse] = await Promise.all([
-          api.get('/propostas/ativa', { skipLoading: true }),
-          api.get('/configuracoes', { skipLoading: true })
-        ])
+        const propostaResponse = await api.get('/propostas/ativa', { skipLoading: true })
 
         let novaProposta = propostaResponse.data
-        const novasConfiguracoes = configResponse.data
 
         // Tratar null, undefined ou objeto vazio como "sem proposta"
         if (!novaProposta || Object.keys(novaProposta).length === 0) {
           novaProposta = null
-        }
-
-        // Verificar se o status da proposta mudou
-        if (proposta.value && novaProposta &&
-            proposta.value.id === novaProposta.id &&
-            proposta.value.status !== novaProposta.status) {
-          // Status mudou - recarregar página para aplicar nova visualização
-          proposta.value = novaProposta
+          proposta.value = null
+          tempoRestante.value = 0
         } else {
-          proposta.value = novaProposta
-        }
+          // Verificar se o status da proposta mudou
+          if (proposta.value && novaProposta &&
+              proposta.value.id === novaProposta.id &&
+              proposta.value.status !== novaProposta.status) {
+            // Status mudou - recarregar página para aplicar nova visualização
+            proposta.value = novaProposta
+          } else {
+            proposta.value = novaProposta
+          }
 
-        configuracoes.value = novasConfiguracoes
-        tempoRestante.value = novasConfiguracoes.tempo_restante_segundos || 0
+          // Atualizar tempo restante da proposta
+          tempoRestante.value = novaProposta.tempo_restante_segundos || 0
+        }
       } catch (err) {
         console.error('Erro ao atualizar dados:', err)
       }
@@ -363,6 +367,12 @@ function formatarTempo(segundos: number): string {
   cursor: pointer;
 }
 
+.select-bancada:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .select-bancada:focus {
   outline: none;
   border-color: #1351b4;
@@ -373,6 +383,7 @@ function formatarTempo(segundos: number): string {
   display: flex;
   gap: 1.5rem;
   justify-content: center;
+  align-items: center;
 }
 
 .btn-voto {

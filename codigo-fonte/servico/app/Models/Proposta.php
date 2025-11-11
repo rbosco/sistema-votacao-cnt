@@ -23,6 +23,9 @@ class Proposta extends Model
         'nome',
         'esta_ativa',
         'status',
+        'limite_votantes',
+        'temporizador_inicio',
+        'temporizador_duracao_minutos',
     ];
 
     /**
@@ -34,6 +37,7 @@ class Proposta extends Model
     {
         return [
             'esta_ativa' => 'boolean',
+            'temporizador_inicio' => 'datetime',
         ];
     }
 
@@ -83,5 +87,43 @@ class Proposta extends Model
     public function scopeAtiva($query)
     {
         return $query->where('esta_ativa', true);
+    }
+
+    /**
+     * Verificar se o temporizador está ativo
+     */
+    public function temporizadorAtivo(): bool
+    {
+        if (!$this->temporizador_inicio || !$this->temporizador_duracao_minutos) {
+            return false;
+        }
+
+        $fim = $this->temporizador_inicio->addMinutes($this->temporizador_duracao_minutos);
+        return now()->lessThan($fim);
+    }
+
+    /**
+     * Obter tempo restante em segundos
+     */
+    public function getTempoRestanteSegundos(): int
+    {
+        if (!$this->temporizadorAtivo()) {
+            return 0;
+        }
+
+        $fim = $this->temporizador_inicio->addMinutes($this->temporizador_duracao_minutos);
+        return now()->diffInSeconds($fim, false);
+    }
+
+    /**
+     * Verificar se atingiu o limite de votantes
+     */
+    public function atingiuLimite(): bool
+    {
+        if (!$this->limite_votantes) {
+            return false;
+        }
+
+        return $this->total_votos >= $this->limite_votantes;
     }
 }

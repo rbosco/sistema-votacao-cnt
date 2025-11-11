@@ -44,14 +44,20 @@ class VotoController extends Controller
             ], 422);
         }
 
-        // Verificar o temporizador se estiver ativo
-        $temporizadorAtivo = Configuracao::obter('temporizador_ativo', '0');
-        if ($temporizadorAtivo === '1') {
-            if (!Configuracao::temporizadorAtivo()) {
+        // Verificar o temporizador da proposta se estiver configurado
+        if ($proposta->temporizador_inicio && $proposta->temporizador_duracao_minutos) {
+            if (!$proposta->temporizadorAtivo()) {
                 return response()->json([
                     'message' => 'Tempo de votação encerrado.',
                 ], 422);
             }
+        }
+
+        // Verificar se atingiu o limite de votantes
+        if ($proposta->atingiuLimite()) {
+            return response()->json([
+                'message' => 'Limite de votantes atingido para esta proposta.',
+            ], 422);
         }
 
         // Verificar se o CPF já votou nesta proposta

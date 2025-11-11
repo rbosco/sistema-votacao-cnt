@@ -76,6 +76,13 @@ class PropostaController extends Controller
     {
         $proposta = Proposta::ativa()->first();
 
+        if ($proposta) {
+            // Adicionar informações do temporizador
+            $proposta->temporizador_ativo = $proposta->temporizadorAtivo();
+            $proposta->tempo_restante_segundos = $proposta->getTempoRestanteSegundos();
+            $proposta->atingiu_limite = $proposta->atingiuLimite();
+        }
+
         return response()->json($proposta);
     }
 
@@ -121,11 +128,14 @@ class PropostaController extends Controller
                 'nome' => 'required|string|max:255',
                 'esta_ativa' => 'boolean',
                 'status' => 'nullable|in:nao_iniciada,em_votacao,encerrada',
+                'limite_votantes' => 'nullable|integer|min:1',
             ], [
                 'nome.required' => 'O nome da proposta é obrigatório.',
                 'nome.max' => 'O nome não pode ter mais de :max caracteres.',
                 'numero.max' => 'O número não pode ter mais de :max caracteres.',
                 'status.in' => 'O status deve ser "nao_iniciada", "em_votacao" ou "encerrada".',
+                'limite_votantes.integer' => 'O limite de votantes deve ser um número inteiro.',
+                'limite_votantes.min' => 'O limite de votantes deve ser no mínimo :min.',
             ]);
 
             $proposta = Proposta::findOrFail($id);
@@ -176,6 +186,7 @@ class PropostaController extends Controller
                         'nome' => $request->nome,
                         'esta_ativa' => true,
                         'status' => $request->status ?? $proposta->status,
+                        'limite_votantes' => $request->limite_votantes,
                     ]);
                     \Log::info('Proposta atualizada e ativada', ['proposta' => $proposta->toArray()]);
                 });
@@ -194,6 +205,7 @@ class PropostaController extends Controller
                     'nome' => $request->nome,
                     'esta_ativa' => $request->esta_ativa ?? $proposta->esta_ativa,
                     'status' => $request->status ?? $proposta->status,
+                    'limite_votantes' => $request->limite_votantes ?? $proposta->limite_votantes,
                 ]);
             }
 
@@ -309,13 +321,28 @@ class PropostaController extends Controller
             }])->findOrFail($id);
 
             $votos_sim = $proposta->votos->where('voto', 1)->count();
-            $votos_nao = $proposta->votos->where('voto', 0)->count();
+            $total_aptos = $proposta->limite_votantes ?? $proposta->votos->count();
+
+            // Calcular percentual baseado no total de aptos a votar
+            $percentual = $total_aptos > 0 ? ($votos_sim / $total_aptos) * 100 : 0;
+
+            // Classificar o resultado
+            $classificacao = '';
+            if ($percentual > 75) {
+                $classificacao = 'Ampla Maioria';
+            } elseif ($percentual > 50) {
+                $classificacao = 'Maioria';
+            } else {
+                $classificacao = 'Minoria';
+            }
 
             return response()->json([
                 'proposta' => $proposta,
                 'resultados' => [
-                    'sim' => $votos_sim,
-                    'nao' => $votos_nao,
+                    'total_aptos' => $total_aptos,
+                    'votos_sim' => $votos_sim,
+                    'percentual' => round($percentual, 2),
+                    'classificacao' => $classificacao,
                 ],
                 'total_votos' => $proposta->votos->count(),
                 'votos' => $proposta->votos,
@@ -454,6 +481,42 @@ class PropostaController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'mensagem' => 'Erro ao importar arquivo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Ativar temporizador para uma proposta
+     */
+    public function ativarTemporizador(Request $request, $id)
+    {
+        try {
+            $proposta = Proposta::findOrFail($id);
+
+            // Verificar se a proposta está ativa e em votação
+            if (!$proposta->esta_ativa || $proposta->status !== 'em_votacao') {
+                return response()->json([
+                    'message' => 'Só é possível ativar o temporizador em propostas ativas com status "Em Votação".'
+                ], 422);
+            }
+
+            // Obter a duração configurada nas configurações do sistema
+            $duracaoMinutos = \App\Models\Configuracao::obter('temporizador_duracao_minutos', 30);
+
+            // Ativar o temporizador
+            $proposta->update([
+                'temporizador_inicio' => now(),
+                'temporizador_duracao_minutos' => $duracaoMinutos
+            ]);
+
+            return response()->json([
+                'message' => 'Temporizador ativado com sucesso!',
+                'proposta' => $proposta
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Erro ao ativar temporizador: ' . $e->getMessage()
             ], 500);
         }
     }
