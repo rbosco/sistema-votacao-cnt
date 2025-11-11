@@ -14,7 +14,7 @@
       </div>
 
       <div v-else class="resultados-card">
-        <h2>Proposta {{ proposta?.numero }}: {{ proposta?.nome }}</h2>
+        <h2>Resultado de votação da proposta: {{ proposta?.nome }}</h2>
 
         <!-- Mostrar mensagem se votação encerrada -->
         <div v-if="proposta?.status === 'encerrada'" class="status-mensagem encerrada">
@@ -22,22 +22,28 @@
           <div class="status-texto">Votação Encerrada</div>
         </div>
 
-        <div class="estatisticas">
-          <div class="stat-card sim">
-            <h3>Sim</h3>
-            <p class="numero">{{ resultados.sim || 0 }}</p>
-            <p class="percentual">{{ calcularPercentual('sim') }}%</p>
-          </div>
-
-          <div class="stat-card nao">
-            <h3>Não</h3>
-            <p class="numero">{{ resultados.nao || 0 }}</p>
-            <p class="percentual">{{ calcularPercentual('nao') }}%</p>
-          </div>
+        <!-- Classificação da votação -->
+        <div class="classificacao-card" :class="classificacaoClass">
+          <div class="classificacao-icone">{{ classificacaoIcone }}</div>
+          <div class="classificacao-titulo">{{ resultados.classificacao }}</div>
+          <div class="classificacao-percentual">{{ resultados.percentual }}%</div>
         </div>
 
-        <div class="total">
-          <h3>Total de Votos: {{ total }}</h3>
+        <div class="estatisticas">
+          <div class="stat-card aptos">
+            <h3>Total de Aptos a Votar</h3>
+            <p class="numero">{{ resultados.total_aptos || 0 }}</p>
+          </div>
+
+          <div class="stat-card sim">
+            <h3>Votos Sim</h3>
+            <p class="numero">{{ resultados.votos_sim || 0 }}</p>
+          </div>
+
+          <div class="stat-card total-votos">
+            <h3>Total de Votos Registrados</h3>
+            <p class="numero">{{ totalVotos || 0 }}</p>
+          </div>
         </div>
 
         <div class="voltar">
@@ -57,23 +63,30 @@ const route = useRoute()
 
 const proposta = ref<any>(null)
 const resultados = ref<any>({})
+const totalVotos = ref<number>(0)
 const configuracoes = ref<any>({})
 const carregando = ref(true)
 const erro = ref('')
-
-const total = computed(() => {
-  return (resultados.value.sim || 0) +
-         (resultados.value.nao || 0)
-})
 
 const bannerUrl = computed(() => {
   return configuracoes.value.banner_votacao || '/images/banner-cnt.png'
 })
 
-function calcularPercentual(tipo: string) {
-  if (total.value === 0) return '0'
-  return ((resultados.value[tipo] || 0) / total.value * 100).toFixed(1)
-}
+const classificacaoClass = computed(() => {
+  const classificacao = resultados.value.classificacao
+  if (classificacao === 'Ampla Maioria') return 'ampla-maioria'
+  if (classificacao === 'Maioria') return 'maioria'
+  if (classificacao === 'Minoria') return 'minoria'
+  return ''
+})
+
+const classificacaoIcone = computed(() => {
+  const classificacao = resultados.value.classificacao
+  if (classificacao === 'Ampla Maioria') return '🏆'
+  if (classificacao === 'Maioria') return '👍'
+  if (classificacao === 'Minoria') return '📊'
+  return '📊'
+})
 
 onMounted(async () => {
   try {
@@ -87,6 +100,7 @@ onMounted(async () => {
 
     proposta.value = resultadosResponse.data.proposta
     resultados.value = resultadosResponse.data.resultados
+    totalVotos.value = resultadosResponse.data.total_votos || 0
     configuracoes.value = configResponse.data
   } catch (err: any) {
     erro.value = err.response?.data?.mensagem || 'Erro ao carregar resultados'
@@ -135,6 +149,49 @@ onMounted(async () => {
   font-size: 1.8rem;
 }
 
+.classificacao-card {
+  text-align: center;
+  padding: 2.5rem;
+  margin-bottom: 2rem;
+  border-radius: 12px;
+  border: 3px solid;
+}
+
+.classificacao-icone {
+  font-size: 4rem;
+  margin-bottom: 0.5rem;
+}
+
+.classificacao-titulo {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.classificacao-percentual {
+  font-size: 2.5rem;
+  font-weight: bold;
+  opacity: 0.9;
+}
+
+.classificacao-card.ampla-maioria {
+  background: #d3f9d8;
+  border-color: #2b8a3e;
+  color: #2b8a3e;
+}
+
+.classificacao-card.maioria {
+  background: #e7f5ff;
+  border-color: #1351b4;
+  color: #1351b4;
+}
+
+.classificacao-card.minoria {
+  background: #fff4e6;
+  border-color: #f59f00;
+  color: #f59f00;
+}
+
 .estatisticas {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -146,44 +203,34 @@ onMounted(async () => {
   padding: 2rem;
   border-radius: 8px;
   text-align: center;
+  border: 2px solid;
+}
+
+.stat-card.aptos {
+  background: #e7f5ff;
+  border-color: #1351b4;
 }
 
 .stat-card.sim {
   background: #d3f9d8;
-  border: 2px solid #2b8a3e;
+  border-color: #2b8a3e;
 }
 
-.stat-card.nao {
-  background: #ffe3e3;
-  border: 2px solid #c92a2a;
+.stat-card.total-votos {
+  background: #f8f9fa;
+  border-color: #666;
 }
 
 .stat-card h3 {
   margin: 0 0 1rem 0;
-  font-size: 1.2rem;
+  font-size: 1rem;
+  color: #333;
+  font-weight: 600;
 }
 
 .stat-card .numero {
   font-size: 3rem;
   font-weight: bold;
-  margin: 0;
-}
-
-.stat-card .percentual {
-  font-size: 1.5rem;
-  margin: 0.5rem 0 0 0;
-  opacity: 0.8;
-}
-
-.total {
-  text-align: center;
-  padding: 1.5rem;
-  background: #f8f9fa;
-  border-radius: 4px;
-  margin-bottom: 1.5rem;
-}
-
-.total h3 {
   margin: 0;
   color: #1351b4;
 }

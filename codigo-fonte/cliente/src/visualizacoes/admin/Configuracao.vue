@@ -36,24 +36,12 @@
           <p class="help-text">Formatos aceitos: JPG, PNG, GIF. Tamanho máximo: 5MB</p>
         </section>
 
-        <!-- Temporizador de Votação -->
+        <!-- Duração do Temporizador -->
         <section class="config-section">
-          <h2>Temporizador de Votação</h2>
-
-          <div class="timer-status">
-            <div class="status-badge" :class="{ ativo: temporizadorAtivo, inativo: !temporizadorAtivo }">
-              {{ temporizadorAtivo ? 'Ativo' : 'Inativo' }}
-            </div>
-            <div v-if="temporizadorAtivo && tempoRestante > 0" class="time-remaining">
-              Tempo restante: <strong>{{ formatarTempoRestante() }}</strong>
-            </div>
-            <div v-else-if="temporizadorAtivo && tempoRestante <= 0" class="time-expired">
-              Tempo expirado
-            </div>
-          </div>
+          <h2>Duração do Temporizador</h2>
 
           <div class="form-group">
-            <label>Duração da votação (minutos):</label>
+            <label>Duração padrão da votação (minutos):</label>
             <input
               type="number"
               v-model.number="duracao"
@@ -63,29 +51,21 @@
             />
           </div>
 
-          <div class="timer-actions">
-            <button
-              @click="ativarTemporizador"
-              :disabled="salvando || !duracao"
-              class="btn-success"
-            >
-              {{ temporizadorAtivo ? 'Reiniciar Temporizador' : 'Ativar Temporizador' }}
-            </button>
-            <button
-              @click="desativarTemporizador"
-              :disabled="salvando || !temporizadorAtivo"
-              class="btn-danger"
-            >
-              Desativar Temporizador
-            </button>
-          </div>
+          <button
+            @click="salvarDuracao"
+            :disabled="salvando || !duracao"
+            class="btn-primary"
+          >
+            {{ salvando ? 'Salvando...' : 'Salvar Duração' }}
+          </button>
 
           <div class="alert info">
             <strong>ℹ️ Como funciona:</strong>
             <ul>
-              <li>Quando o temporizador está ativo, a votação só aceita votos durante o tempo configurado</li>
-              <li>Quando o temporizador está inativo, a votação segue o status da proposta (ativa/inativa)</li>
-              <li>O tempo restante é mostrado na página de votação</li>
+              <li>Defina aqui a duração padrão para o temporizador das propostas</li>
+              <li>O temporizador deve ser ativado individualmente em cada proposta através do botão ⏱️</li>
+              <li>Só é possível ativar o temporizador em propostas ativas com status "Em Votação"</li>
+              <li>O tempo restante é mostrado na página de votação para propostas com temporizador ativo</li>
             </ul>
           </div>
         </section>
@@ -110,27 +90,8 @@ const uploading = ref(false)
 const salvando = ref(false)
 const duracao = ref(30)
 
-const temporizadorAtivo = computed(() => {
-  return configuracoes.value.temporizador_ativo === '1' &&
-         configuracoes.value.temporizador_ativo_verificado === true
-})
-
-const tempoRestante = computed(() => {
-  return configuracoes.value.tempo_restante_segundos || 0
-})
-
-let intervalo: any = null
-
 onMounted(async () => {
   await carregarConfiguracoes()
-  // Atualizar tempo restante a cada segundo
-  intervalo = setInterval(atualizarTempoRestante, 1000)
-})
-
-onUnmounted(() => {
-  if (intervalo) {
-    clearInterval(intervalo)
-  }
 })
 
 async function carregarConfiguracoes() {
@@ -140,19 +101,6 @@ async function carregarConfiguracoes() {
     duracao.value = parseInt(configuracoes.value.temporizador_duracao_minutos || '30')
   } catch (err) {
     console.error('Erro ao carregar configurações:', err)
-  }
-}
-
-async function atualizarTempoRestante() {
-  if (temporizadorAtivo.value) {
-    try {
-      // skipLoading: true para não mostrar loading durante polling
-      const response = await api.get('/configuracoes', { skipLoading: true })
-      configuracoes.value.tempo_restante_segundos = response.data.tempo_restante_segundos
-      configuracoes.value.temporizador_ativo_verificado = response.data.temporizador_ativo_verificado
-    } catch (err) {
-      console.error('Erro ao atualizar tempo restante:', err)
-    }
   }
 }
 
@@ -190,68 +138,25 @@ async function uploadBanner() {
   }
 }
 
-async function ativarTemporizador() {
-  salvando.value = true
-  try {
-    // Salvar duração
-    await api.put('/configuracoes', {
-      temporizador_duracao_minutos: duracao.value,
-      temporizador_ativo: '1'
-    })
-
-    // Reiniciar temporizador
-    await api.post('/configuracoes/temporizador/reiniciar')
-
-    alert('Temporizador ativado com sucesso!')
-    await carregarConfiguracoes()
-  } catch (err: any) {
-    alert(err.response?.data?.mensagem || 'Erro ao ativar temporizador')
-  } finally {
-    salvando.value = false
-  }
-}
-
-async function desativarTemporizador() {
+async function salvarDuracao() {
   salvando.value = true
   try {
     await api.put('/configuracoes', {
-      temporizador_ativo: '0'
+      temporizador_duracao_minutos: duracao.value
     })
 
-    alert('Temporizador desativado!')
+    alert('Duração padrão do temporizador salva com sucesso!')
     await carregarConfiguracoes()
   } catch (err: any) {
-    alert(err.response?.data?.mensagem || 'Erro ao desativar temporizador')
+    alert(err.response?.data?.mensagem || 'Erro ao salvar duração')
   } finally {
     salvando.value = false
-  }
-}
-
-function formatarTempoRestante() {
-  const segundos = tempoRestante.value
-  const horas = Math.floor(segundos / 3600)
-  const minutos = Math.floor((segundos % 3600) / 60)
-  const segs = segundos % 60
-
-  if (horas > 0) {
-    return `${horas}h ${minutos}m ${segs}s`
-  } else if (minutos > 0) {
-    return `${minutos}m ${segs}s`
-  } else {
-    return `${segs}s`
   }
 }
 
 async function sair() {
   await armazenamentoAuth.sair()
   router.push('/login')
-}
-
-function onUnmounted(callback: () => void) {
-  // Vue 3 onUnmounted hook
-  if (typeof window !== 'undefined') {
-    window.addEventListener('beforeunload', callback)
-  }
 }
 </script>
 

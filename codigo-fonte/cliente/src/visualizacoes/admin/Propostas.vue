@@ -82,6 +82,19 @@
               </select>
             </div>
 
+            <div class="form-group">
+              <label>Limite de Votantes:</label>
+              <input
+                v-model.number="formulario.limite_votantes"
+                type="number"
+                min="1"
+                placeholder="Deixe vazio para votação ilimitada"
+              />
+              <small style="color: #666; font-size: 0.875rem;">
+                Número máximo de pessoas que podem votar nesta proposta
+              </small>
+            </div>
+
             <div class="form-group-switch">
               <label>Proposta Ativa:</label>
               <Switch v-model="formulario.esta_ativa" />
@@ -112,6 +125,7 @@
               <th>Número</th>
               <th>Nome</th>
               <th>Status da Votação</th>
+              <th>Limite Votantes</th>
               <th>Ativa</th>
               <th>Data de Cadastro</th>
               <th>Ações</th>
@@ -141,6 +155,12 @@
                 </select>
               </td>
               <td>
+                <span v-if="proposta.limite_votantes">
+                  {{ proposta.total_votos || 0 }} / {{ proposta.limite_votantes }}
+                </span>
+                <span v-else style="color: #999;">Ilimitado</span>
+              </td>
+              <td>
                 <Switch
                   v-model="proposta.esta_ativa"
                   @update:modelValue="(valor) => alternarStatus(proposta, valor)"
@@ -148,6 +168,14 @@
               </td>
               <td>{{ formatarData(proposta.created_at) }}</td>
               <td>
+                <button
+                  @click="ativarTemporizador(proposta)"
+                  class="btn-temporizador"
+                  :disabled="!proposta.esta_ativa || proposta.status !== 'em_votacao'"
+                  :title="!proposta.esta_ativa || proposta.status !== 'em_votacao' ? 'Só é possível ativar o temporizador em propostas ativas com status Em Votação' : 'Ativar temporizador'"
+                >
+                  ⏱️
+                </button>
                 <button @click="editar(proposta)" class="btn-editar">Editar</button>
                 <button @click="excluir(proposta.id)" class="btn-excluir">Excluir</button>
               </td>
@@ -185,7 +213,8 @@ const formulario = ref({
   numero: '',
   nome: '',
   esta_ativa: false,
-  status: 'nao_iniciada'
+  status: 'nao_iniciada',
+  limite_votantes: null
 })
 
 // Filtrar propostas localmente
@@ -392,6 +421,27 @@ async function alterarStatusVotacao(proposta: any, novoStatus: string) {
   }
 }
 
+async function ativarTemporizador(proposta: any) {
+  if (!proposta.esta_ativa || proposta.status !== 'em_votacao') {
+    alert('Só é possível ativar o temporizador em propostas ativas com status "Em Votação"')
+    return
+  }
+
+  if (!confirm(`Deseja ativar o temporizador para a proposta "${proposta.nome}"?`)) {
+    return
+  }
+
+  try {
+    const response = await api.post(`/propostas/${proposta.id}/ativar-temporizador`)
+    alert(response.data.message || 'Temporizador ativado com sucesso!')
+    await carregarPropostas()
+  } catch (err: any) {
+    console.error('Erro ao ativar temporizador:', err)
+    const mensagem = err.response?.data?.message || 'Erro ao ativar temporizador'
+    alert(mensagem)
+  }
+}
+
 function fecharFormulario() {
   mostrarFormulario.value = false
   editando.value = false
@@ -400,7 +450,8 @@ function fecharFormulario() {
     numero: '',
     nome: '',
     esta_ativa: false,
-    status: 'nao_iniciada'
+    status: 'nao_iniciada',
+    limite_votantes: null
   }
 }
 
@@ -762,12 +813,30 @@ th {
   border-color: #666;
 }
 
-.btn-editar, .btn-excluir {
+.btn-temporizador, .btn-editar, .btn-excluir {
   padding: 0.5rem 1rem;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   margin-right: 0.5rem;
+  transition: all 0.2s;
+}
+
+.btn-temporizador {
+  background: #1351b4;
+  color: white;
+  font-size: 1.2rem;
+}
+
+.btn-temporizador:hover:not(:disabled) {
+  background: #0d3a7f;
+  transform: translateY(-2px);
+}
+
+.btn-temporizador:disabled {
+  background: #e9ecef;
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .btn-editar {
@@ -775,9 +844,17 @@ th {
   color: white;
 }
 
+.btn-editar:hover {
+  background: #d68400;
+}
+
 .btn-excluir {
   background: #c92a2a;
   color: white;
+}
+
+.btn-excluir:hover {
+  background: #a61e1e;
 }
 
 .modal {
