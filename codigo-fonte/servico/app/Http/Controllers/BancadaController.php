@@ -12,7 +12,7 @@ class BancadaController extends Controller
      */
     public function index(): JsonResponse
     {
-        $bancadas = Bancada::orderBy('nome')->get();
+        $bancadas = Bancada::orderBy('id')->get();
 
         return response()->json([
             'data' => $bancadas
