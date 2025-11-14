@@ -501,12 +501,13 @@ class PropostaController extends Controller
             }
 
             // Obter a duração configurada nas configurações do sistema
-            $duracaoMinutos = \App\Models\Configuracao::obter('temporizador_duracao_minutos', 30);
+            $duracaoMinutos = (int) \App\Models\Configuracao::obter('temporizador_duracao_minutos', 30);
 
             // Ativar o temporizador
             $proposta->update([
                 'temporizador_inicio' => now(),
-                'temporizador_duracao_minutos' => $duracaoMinutos
+                'temporizador_duracao_minutos' => $duracaoMinutos,
+                'temporizador_ativo' => true
             ]);
 
             return response()->json([

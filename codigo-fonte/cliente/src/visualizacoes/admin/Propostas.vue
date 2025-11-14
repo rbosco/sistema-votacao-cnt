@@ -127,6 +127,7 @@
               <th>Status da Votação</th>
               <th>Limite Votantes</th>
               <th>Ativa</th>
+              <th>Temporizador</th>
               <th>Data de Cadastro</th>
               <th>Ações</th>
             </tr>
@@ -164,6 +165,13 @@
                 <Switch
                   v-model="proposta.esta_ativa"
                   @update:modelValue="(valor) => alternarStatus(proposta, valor)"
+                />
+              </td>
+              <td>
+                <Switch
+                  v-model="proposta.temporizador_ativo"
+                  @update:modelValue="(valor) => alternarTemporizador(proposta, valor)"
+                  :disabled="!proposta.esta_ativa || proposta.status !== 'em_votacao'"
                 />
               </td>
               <td>{{ formatarData(proposta.created_at) }}</td>
@@ -439,6 +447,36 @@ async function ativarTemporizador(proposta: any) {
     console.error('Erro ao ativar temporizador:', err)
     const mensagem = err.response?.data?.message || 'Erro ao ativar temporizador'
     alert(mensagem)
+  }
+}
+
+async function alternarTemporizador(proposta: any, novoValor: boolean) {
+  if (!proposta.esta_ativa || proposta.status !== 'em_votacao') {
+    alert('Só é possível ativar o temporizador em propostas ativas com status "Em Votação"')
+    proposta.temporizador_ativo = !novoValor
+    return
+  }
+
+  try {
+    if (novoValor) {
+      // Ativar temporizador
+      await api.post(`/propostas/${proposta.id}/ativar-temporizador`)
+    } else {
+      // Desativar temporizador
+      await api.put(`/propostas/${proposta.id}`, {
+        numero: proposta.numero,
+        nome: proposta.nome,
+        esta_ativa: proposta.esta_ativa,
+        status: proposta.status,
+        limite_votantes: proposta.limite_votantes,
+        temporizador_ativo: false
+      })
+    }
+    await carregarPropostas()
+  } catch (err: any) {
+    console.error('Erro ao alterar temporizador:', err)
+    proposta.temporizador_ativo = !novoValor
+    alert(err.response?.data?.message || 'Erro ao alterar temporizador')
   }
 }
 

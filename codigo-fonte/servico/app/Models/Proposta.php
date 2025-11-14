@@ -26,6 +26,7 @@ class Proposta extends Model
         'limite_votantes',
         'temporizador_inicio',
         'temporizador_duracao_minutos',
+        'temporizador_ativo',
     ];
 
     /**
@@ -37,7 +38,9 @@ class Proposta extends Model
     {
         return [
             'esta_ativa' => 'boolean',
+            'temporizador_ativo' => 'boolean',
             'temporizador_inicio' => 'datetime',
+            'temporizador_duracao_minutos' => 'integer',
         ];
     }
 
@@ -94,11 +97,16 @@ class Proposta extends Model
      */
     public function temporizadorAtivo(): bool
     {
+        // Verifica se o temporizador está ativado via switch
+        if (!$this->temporizador_ativo) {
+            return false;
+        }
+
         if (!$this->temporizador_inicio || !$this->temporizador_duracao_minutos) {
             return false;
         }
 
-        $fim = $this->temporizador_inicio->copy()->addMinutes($this->temporizador_duracao_minutos);
+        $fim = $this->temporizador_inicio->copy()->addMinutes((int) $this->temporizador_duracao_minutos);
         return now()->lessThan($fim);
     }
 
@@ -111,7 +119,7 @@ class Proposta extends Model
             return 0;
         }
 
-        $fim = $this->temporizador_inicio->copy()->addMinutes($this->temporizador_duracao_minutos);
+        $fim = $this->temporizador_inicio->copy()->addMinutes((int) $this->temporizador_duracao_minutos);
         return max(0, now()->diffInSeconds($fim, false));
     }
 
