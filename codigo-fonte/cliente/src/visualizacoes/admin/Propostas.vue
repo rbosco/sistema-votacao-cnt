@@ -55,6 +55,9 @@
           <button v-if="busca" @click="limparPesquisa" class="btn-limpar-pesquisa">
             ✕
           </button>
+          <button @click="carregarPropostas" class="btn-atualizar" title="Atualizar grid">
+            🔄
+          </button>
         </div>
       </div>
 
@@ -662,7 +665,7 @@ async function sair() {
 
 .input-pesquisa {
   width: 100%;
-  padding: 0.75rem 2.5rem 0.75rem 1rem;
+  padding: 0.75rem 5rem 0.75rem 1rem;
   border: 2px solid #e9ecef;
   border-radius: 8px;
   font-size: 1rem;
@@ -681,7 +684,7 @@ async function sair() {
 
 .btn-limpar-pesquisa {
   position: absolute;
-  right: 0.5rem;
+  right: 3rem;
   top: 50%;
   transform: translateY(-50%);
   background: #e9ecef;
@@ -701,6 +704,36 @@ async function sair() {
 .btn-limpar-pesquisa:hover {
   background: #dee2e6;
   color: #333;
+}
+
+.btn-atualizar {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #1351b4;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  font-size: 1.1rem;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-atualizar:hover {
+  background: #0d3a7f;
+  transform: translateY(-50%) rotate(180deg);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.btn-atualizar:active {
+  transform: translateY(-50%) rotate(360deg);
 }
 
 .tabela-container {
