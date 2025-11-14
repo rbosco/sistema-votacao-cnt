@@ -14,7 +14,8 @@
       </div>
 
       <div v-else class="resultados-card">
-        <h2>Resultado de votação da proposta: {{ proposta?.nome }}</h2>
+        <h1 style="text-align: center;color:#333;">Resultado da votação</h1>
+        <h2>{{ proposta?.nome }}</h2>
 
         <!-- Mostrar mensagem se votação encerrada -->
         <div v-if="proposta?.status === 'encerrada'" class="status-mensagem encerrada">
