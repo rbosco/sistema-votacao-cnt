@@ -54,3 +54,44 @@ export function aplicarMascaraCPF(event: Event): void {
     input.value = valor
   }
 }
+
+/**
+ * Valida se um CPF é válido segundo o algoritmo de dígitos verificadores
+ * @param cpf - CPF com ou sem formatação
+ * @returns true se o CPF for válido, false caso contrário
+ */
+export function validarCPF(cpf: string): boolean {
+  if (!cpf) return false
+
+  // Remove formatação
+  const cpfLimpo = cpf.replace(/\D/g, '')
+
+  // Verifica se tem 11 dígitos
+  if (cpfLimpo.length !== 11) return false
+
+  // Verifica se todos os dígitos são iguais (ex: 111.111.111-11)
+  if (/^(\d)\1+$/.test(cpfLimpo)) return false
+
+  // Validação dos dígitos verificadores
+  let soma = 0
+  let resto
+
+  // Valida primeiro dígito verificador
+  for (let i = 1; i <= 9; i++) {
+    soma += parseInt(cpfLimpo.substring(i - 1, i)) * (11 - i)
+  }
+  resto = (soma * 10) % 11
+  if (resto === 10 || resto === 11) resto = 0
+  if (resto !== parseInt(cpfLimpo.substring(9, 10))) return false
+
+  // Valida segundo dígito verificador
+  soma = 0
+  for (let i = 1; i <= 10; i++) {
+    soma += parseInt(cpfLimpo.substring(i - 1, i)) * (12 - i)
+  }
+  resto = (soma * 10) % 11
+  if (resto === 10 || resto === 11) resto = 0
+  if (resto !== parseInt(cpfLimpo.substring(10, 11))) return false
+
+  return true
+}

@@ -1,5 +1,34 @@
 <template>
   <div class="votacao-container">
+    <!-- Modal de CPF -->
+    <div v-if="mostrarModalCPF" class="modal-overlay">
+      <div class="modal-cpf">
+        <h2>Identificação do Votante</h2>
+        <p class="modal-descricao">Por favor, informe seu CPF para continuar com a votação.</p>
+
+        <form @submit.prevent="validarESalvarCPF" class="form-cpf">
+          <div class="form-group">
+            <label for="cpf-modal">CPF:</label>
+            <input
+              v-model="cpfModal"
+              @input="aplicarMascaraCPFModal"
+              type="text"
+              id="cpf-modal"
+              required
+              placeholder="000.000.000-00"
+              maxlength="14"
+              autofocus
+            />
+            <span v-if="erroCPF" class="erro-validacao">{{ erroCPF }}</span>
+          </div>
+
+          <button type="submit" class="btn-confirmar-cpf" :disabled="validandoCPF">
+            {{ validandoCPF ? 'Validando...' : 'Confirmar' }}
+          </button>
+        </form>
+      </div>
+    </div>
+
     <header class="header" v-if="!carregando">
       <img :src="bannerUrl" alt="Sistema de Votação CNT" class="banner" />
     </header>
@@ -80,19 +109,6 @@
           </div>
 
           <div class="form-group">
-            <label for="cpf">CPF</label>
-            <input
-              v-model="formulario.cpf_votante"
-              @input="aplicarMascaraCPF"
-              type="text"
-              id="cpf"
-              required
-              placeholder="000.000.000-00"
-              maxlength="14"
-            />
-          </div>
-
-          <div class="form-group">
             <div class="botoes-voto">
               <button
                 type="button"
@@ -123,9 +139,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import api from '@/servicos/api'
-import { aplicarMascaraCPF as aplicarMascara, removerFormatacaoCPF } from '@/utilidades/formatadores'
+import { aplicarMascaraCPF as aplicarMascara, removerFormatacaoCPF, validarCPF } from '@/utilidades/formatadores'
 
 const proposta = ref<any>(null)
 const carregando = ref(true)
@@ -137,6 +153,15 @@ const configuracoes = ref<any>({})
 const tempoRestante = ref(0)
 const bancadas = ref<any[]>([])
 const bancadaBloqueada = ref(false)
+
+// Modal de CPF
+const mostrarModalCPF = ref(false)
+const cpfModal = ref('')
+const erroCPF = ref('')
+const validandoCPF = ref(false)
+const cpfVotante = ref('') // CPF do votante logado
+
+const STORAGE_KEY_CPF = 'votacao_cpf_votante'
 
 const temporizadorAtivo = computed(() => {
   return proposta.value?.temporizador_ativo === true
@@ -165,15 +190,77 @@ const formulario = ref<{
   voto: null
 })
 
-function aplicarMascaraCPF(event: Event) {
-  aplicarMascara(event)
-  // Atualiza o v-model com o valor formatado
-  formulario.value.cpf_votante = (event.target as HTMLInputElement).value
+// Funções de CPF e localStorage
+function recuperarCPFLocalStorage(): string | null {
+  try {
+    return localStorage.getItem(STORAGE_KEY_CPF)
+  } catch (err) {
+    console.error('Erro ao recuperar CPF do localStorage:', err)
+    return null
+  }
 }
+
+function salvarCPFLocalStorage(cpf: string): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_CPF, cpf)
+  } catch (err) {
+    console.error('Erro ao salvar CPF no localStorage:', err)
+  }
+}
+
+function aplicarMascaraCPFModal(event: Event): void {
+  aplicarMascara(event)
+  cpfModal.value = (event.target as HTMLInputElement).value
+}
+
+function validarESalvarCPF(): void {
+  erroCPF.value = ''
+  validandoCPF.value = true
+
+  // Valida o CPF
+  if (!validarCPF(cpfModal.value)) {
+    erroCPF.value = 'CPF inválido. Por favor, verifique o número digitado.'
+    validandoCPF.value = false
+    return
+  }
+
+  // Salva no localStorage
+  const cpfLimpo = removerFormatacaoCPF(cpfModal.value)
+  salvarCPFLocalStorage(cpfLimpo)
+  cpfVotante.value = cpfLimpo
+
+  // Fecha a modal
+  mostrarModalCPF.value = false
+  validandoCPF.value = false
+}
+
+function verificarCPF(): void {
+  const cpfSalvo = recuperarCPFLocalStorage()
+  if (cpfSalvo) {
+    cpfVotante.value = cpfSalvo
+    mostrarModalCPF.value = false
+  } else {
+    mostrarModalCPF.value = true
+  }
+}
+
+// Watch para recuperar CPF quando a proposta mudar
+watch(() => proposta.value?.id, (novoId, antigoId) => {
+  if (novoId && novoId !== antigoId) {
+    // Proposta mudou, recuperar CPF do localStorage
+    const cpfSalvo = recuperarCPFLocalStorage()
+    if (cpfSalvo) {
+      cpfVotante.value = cpfSalvo
+    }
+  }
+})
 
 let intervalo: any = null
 
 onMounted(async () => {
+  // Verificar CPF no início
+  verificarCPF()
+
   try {
     // Carregar proposta, configurações e bancadas
     const [propostaResponse, configResponse, bancadasResponse] = await Promise.all([
@@ -264,17 +351,17 @@ async function enviarVoto() {
   try {
     await api.post('/votar', {
       ...formulario.value,
-      cpf_votante: removerFormatacaoCPF(formulario.value.cpf_votante),
+      cpf_votante: cpfVotante.value, // Usar CPF do localStorage
       proposta_id: proposta.value.id
     })
 
     mensagem.value = 'Voto registrado com sucesso!'
     mensagemTipo.value = 'sucesso'
 
-    // Limpar formulário
+    // Limpar formulário (mas manter CPF)
     formulario.value = {
       bancada_id: null,
-      cpf_votante: '',
+      cpf_votante: cpfVotante.value,
       nome_votante: '',
       nome_sindicato: '',
       voto: null
@@ -583,5 +670,127 @@ function formatarTempo(segundos: number): string {
 
 .status-mensagem.encerrada .status-texto {
   color: #666;
+}
+
+/* Modal de CPF */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(5px);
+}
+
+.modal-cpf {
+  background: white;
+  border-radius: 12px;
+  padding: 2.5rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  animation: modalAppear 0.3s ease-out;
+}
+
+@keyframes modalAppear {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-cpf h2 {
+  color: #1351b4;
+  margin: 0 0 1rem 0;
+  font-size: 1.8rem;
+  text-align: center;
+}
+
+.modal-descricao {
+  text-align: center;
+  color: #666;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+}
+
+.form-cpf {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-cpf .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-cpf label {
+  font-weight: 600;
+  color: #333;
+  font-size: 1rem;
+}
+
+.form-cpf input {
+  padding: 1rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  transition: all 0.2s;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+.form-cpf input:focus {
+  outline: none;
+  border-color: #1351b4;
+  box-shadow: 0 0 0 4px rgba(19, 81, 180, 0.1);
+}
+
+.erro-validacao {
+  color: #c92a2a;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem;
+  background: #ffe3e3;
+  border-radius: 4px;
+  text-align: center;
+  margin-top: 0.5rem;
+  display: block;
+}
+
+.btn-confirmar-cpf {
+  background: #1351b4;
+  color: white;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-confirmar-cpf:hover:not(:disabled) {
+  background: #0d3a7f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(19, 81, 180, 0.3);
+}
+
+.btn-confirmar-cpf:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
 }
 </style>
