@@ -287,6 +287,7 @@ watch(() => proposta.value?.id, (novoId, antigoId) => {
 })
 
 let intervalo: any = null
+let intervaloTemporizador: any = null
 
 onMounted(async () => {
   // Verificar CPF no início
@@ -328,8 +329,15 @@ onMounted(async () => {
       }
     }
 
+    // Temporizador local - decrementa a cada 1 segundo
+    intervaloTemporizador = setInterval(() => {
+      if (tempoRestante.value > 0 && temporizadorAtivo.value) {
+        tempoRestante.value--
+      }
+    }, 1000) // Atualizar a cada 1 segundo
+
     // Polling para atualização em tempo real
-    // Verifica mudanças a cada 3 segundos
+    // Sincroniza com servidor a cada 10 segundos
     intervalo = setInterval(async () => {
       try {
         // skipLoading: true para não mostrar loading durante polling
@@ -353,13 +361,13 @@ onMounted(async () => {
             proposta.value = novaProposta
           }
 
-          // Atualizar tempo restante da proposta
+          // Sincronizar tempo restante com servidor (a cada 10 segundos)
           tempoRestante.value = novaProposta.tempo_restante_segundos || 0
         }
       } catch (err) {
         console.error('Erro ao atualizar dados:', err)
       }
-    }, 3000) // Verificar a cada 3 segundos
+    }, 10000) // Sincronizar com servidor a cada 10 segundos
   } catch (err: any) {
     erro.value = err.response?.data?.message || 'Erro ao carregar proposta'
   } finally {
@@ -370,6 +378,9 @@ onMounted(async () => {
 onUnmounted(() => {
   if (intervalo) {
     clearInterval(intervalo)
+  }
+  if (intervaloTemporizador) {
+    clearInterval(intervaloTemporizador)
   }
 })
 
