@@ -374,8 +374,7 @@ class PropostaController extends Controller
         // Configurar cabeçalhos
         $sheet->setCellValue('A1', 'Número');
         $sheet->setCellValue('B1', 'Nome');
-        $sheet->setCellValue('C1', 'Ativa (SIM/NÃO)');
-        $sheet->setCellValue('D1', 'Status (nao_iniciada/em_votacao/encerrada)');
+        $sheet->setCellValue('C1', 'Limite de Votantes');
 
         // Estilizar cabeçalhos
         $headerStyle = [
@@ -386,29 +385,25 @@ class PropostaController extends Controller
             ],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
         ];
-        $sheet->getStyle('A1:D1')->applyFromArray($headerStyle);
+        $sheet->getStyle('A1:C1')->applyFromArray($headerStyle);
 
         // Ajustar largura das colunas
         $sheet->getColumnDimension('A')->setWidth(15);
         $sheet->getColumnDimension('B')->setWidth(50);
         $sheet->getColumnDimension('C')->setWidth(20);
-        $sheet->getColumnDimension('D')->setWidth(35);
 
         // Adicionar exemplos
         $sheet->setCellValue('A2', '1');
         $sheet->setCellValue('B2', 'Proposta de Exemplo 1');
-        $sheet->setCellValue('C2', 'NÃO');
-        $sheet->setCellValue('D2', 'nao_iniciada');
+        $sheet->setCellValue('C2', '100');
 
         $sheet->setCellValue('A3', '2');
         $sheet->setCellValue('B3', 'Proposta de Exemplo 2');
-        $sheet->setCellValue('C3', 'NÃO');
-        $sheet->setCellValue('D3', 'em_votacao');
+        $sheet->setCellValue('C3', '50');
 
         $sheet->setCellValue('A4', '3');
-        $sheet->setCellValue('B4', 'Proposta de Exemplo 3');
-        $sheet->setCellValue('C4', 'SIM');
-        $sheet->setCellValue('D4', 'encerrada');
+        $sheet->setCellValue('B4', 'Proposta de Exemplo 3 - Sem Limite');
+        $sheet->setCellValue('C4', '');
 
         // Gerar arquivo
         $writer = new Xlsx($spreadsheet);
@@ -453,8 +448,7 @@ class PropostaController extends Controller
 
                 $numero = trim($row[0] ?? '');
                 $nome = trim($row[1] ?? '');
-                $ativa = strtoupper(trim($row[2] ?? 'NÃO'));
-                $status = strtolower(trim($row[3] ?? 'nao_iniciada'));
+                $limiteVotantes = trim($row[2] ?? '');
 
                 // Validar nome obrigatório
                 if (empty($nome)) {
@@ -462,20 +456,23 @@ class PropostaController extends Controller
                     continue;
                 }
 
-                // Converter "SIM/NÃO" para boolean
-                $estaAtiva = ($ativa === 'SIM');
-
-                // Validar e normalizar status
-                if (!in_array($status, ['nao_iniciada', 'em_votacao', 'encerrada'])) {
-                    $status = 'nao_iniciada';
+                // Validar e converter limite de votantes
+                $limiteVotantesValor = null;
+                if (!empty($limiteVotantes)) {
+                    if (!is_numeric($limiteVotantes) || (int)$limiteVotantes < 1) {
+                        $erros[] = "Linha " . ($i + 1) . ": Limite de votantes deve ser um número inteiro positivo";
+                        continue;
+                    }
+                    $limiteVotantesValor = (int)$limiteVotantes;
                 }
 
-                // Criar proposta
+                // Criar proposta - sempre inativa e com status "não iniciada"
                 Proposta::create([
                     'numero' => $numero,
                     'nome' => $nome,
-                    'esta_ativa' => $estaAtiva,
-                    'status' => $status
+                    'limite_votantes' => $limiteVotantesValor,
+                    'esta_ativa' => false,
+                    'status' => 'nao_iniciada'
                 ]);
 
                 $importadas++;
