@@ -19,7 +19,7 @@ class PropostaController extends Controller
     public function index(Request $request)
     {
         $query = Proposta::withCount([
-            'votos',
+            'votos as total_votos',
             'votos as total_votos_sim' => function ($query) {
                 $query->where('voto', 1);
             },
