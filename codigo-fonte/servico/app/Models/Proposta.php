@@ -41,7 +41,16 @@ class Proposta extends Model
             'temporizador_ativo' => 'boolean',
             'temporizador_inicio' => 'datetime',
             'temporizador_duracao_minutos' => 'integer',
+            'limite_votantes' => 'integer',
         ];
+    }
+
+    /**
+     * Mutator para garantir que temporizador_duracao_minutos seja sempre integer
+     */
+    public function setTemporizadorDuracaoMinutosAttribute($value)
+    {
+        $this->attributes['temporizador_duracao_minutos'] = $value !== null ? (int) $value : null;
     }
 
     /**

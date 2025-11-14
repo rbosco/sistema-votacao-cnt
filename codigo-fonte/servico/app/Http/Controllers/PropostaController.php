@@ -129,6 +129,8 @@ class PropostaController extends Controller
                 'esta_ativa' => 'boolean',
                 'status' => 'nullable|in:nao_iniciada,em_votacao,encerrada',
                 'limite_votantes' => 'nullable|integer|min:1',
+                'temporizador_ativo' => 'nullable|boolean',
+                'temporizador_duracao_minutos' => 'nullable|integer|min:1',
             ], [
                 'nome.required' => 'O nome da proposta é obrigatório.',
                 'nome.max' => 'O nome não pode ter mais de :max caracteres.',
@@ -136,6 +138,9 @@ class PropostaController extends Controller
                 'status.in' => 'O status deve ser "nao_iniciada", "em_votacao" ou "encerrada".',
                 'limite_votantes.integer' => 'O limite de votantes deve ser um número inteiro.',
                 'limite_votantes.min' => 'O limite de votantes deve ser no mínimo :min.',
+                'temporizador_ativo.boolean' => 'O temporizador ativo deve ser verdadeiro ou falso.',
+                'temporizador_duracao_minutos.integer' => 'A duração do temporizador deve ser um número inteiro.',
+                'temporizador_duracao_minutos.min' => 'A duração do temporizador deve ser no mínimo :min minuto.',
             ]);
 
             $proposta = Proposta::findOrFail($id);
@@ -187,6 +192,8 @@ class PropostaController extends Controller
                         'esta_ativa' => true,
                         'status' => $request->status ?? $proposta->status,
                         'limite_votantes' => $request->limite_votantes,
+                        'temporizador_ativo' => $request->temporizador_ativo ?? $proposta->temporizador_ativo,
+                        'temporizador_duracao_minutos' => $request->temporizador_duracao_minutos ?? $proposta->temporizador_duracao_minutos,
                     ]);
                     \Log::info('Proposta atualizada e ativada', ['proposta' => $proposta->toArray()]);
                 });
@@ -206,6 +213,8 @@ class PropostaController extends Controller
                     'esta_ativa' => $request->esta_ativa ?? $proposta->esta_ativa,
                     'status' => $request->status ?? $proposta->status,
                     'limite_votantes' => $request->limite_votantes ?? $proposta->limite_votantes,
+                    'temporizador_ativo' => $request->temporizador_ativo ?? $proposta->temporizador_ativo,
+                    'temporizador_duracao_minutos' => $request->temporizador_duracao_minutos ?? $proposta->temporizador_duracao_minutos,
                 ]);
             }
 
