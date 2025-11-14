@@ -176,14 +176,6 @@
               </td>
               <td>{{ formatarData(proposta.created_at) }}</td>
               <td>
-                <button
-                  @click="ativarTemporizador(proposta)"
-                  class="btn-temporizador"
-                  :disabled="!proposta.esta_ativa || proposta.status !== 'em_votacao'"
-                  :title="!proposta.esta_ativa || proposta.status !== 'em_votacao' ? 'Só é possível ativar o temporizador em propostas ativas com status Em Votação' : 'Ativar temporizador'"
-                >
-                  ⏱️
-                </button>
                 <button @click="editar(proposta)" class="btn-editar">Editar</button>
                 <button @click="excluir(proposta.id)" class="btn-excluir">Excluir</button>
               </td>
@@ -425,27 +417,6 @@ async function alterarStatusVotacao(proposta: any, novoStatus: string) {
     // Reverter o estado local em caso de erro
     proposta.status = statusAnterior
     const mensagem = err.response?.data?.message || 'Erro ao alterar status da proposta'
-    alert(mensagem)
-  }
-}
-
-async function ativarTemporizador(proposta: any) {
-  if (!proposta.esta_ativa || proposta.status !== 'em_votacao') {
-    alert('Só é possível ativar o temporizador em propostas ativas com status "Em Votação"')
-    return
-  }
-
-  if (!confirm(`Deseja ativar o temporizador para a proposta "${proposta.nome}"?`)) {
-    return
-  }
-
-  try {
-    const response = await api.post(`/propostas/${proposta.id}/ativar-temporizador`)
-    alert(response.data.message || 'Temporizador ativado com sucesso!')
-    await carregarPropostas()
-  } catch (err: any) {
-    console.error('Erro ao ativar temporizador:', err)
-    const mensagem = err.response?.data?.message || 'Erro ao ativar temporizador'
     alert(mensagem)
   }
 }
@@ -851,30 +822,13 @@ th {
   border-color: #666;
 }
 
-.btn-temporizador, .btn-editar, .btn-excluir {
+.btn-editar, .btn-excluir {
   padding: 0.5rem 1rem;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   margin-right: 0.5rem;
   transition: all 0.2s;
-}
-
-.btn-temporizador {
-  background: #1351b4;
-  color: white;
-  font-size: 1.2rem;
-}
-
-.btn-temporizador:hover:not(:disabled) {
-  background: #0d3a7f;
-  transform: translateY(-2px);
-}
-
-.btn-temporizador:disabled {
-  background: #e9ecef;
-  cursor: not-allowed;
-  opacity: 0.5;
 }
 
 .btn-editar {
