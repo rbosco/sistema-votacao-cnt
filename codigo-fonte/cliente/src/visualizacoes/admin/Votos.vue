@@ -72,6 +72,13 @@
         </a>
       </div>
 
+      <!-- Classificação da votação -->
+      <div v-if="propostaSelecionada" class="classificacao-card" :class="classificacaoClass">
+        <div class="classificacao-icone">{{ classificacaoIcone }}</div>
+        <div class="classificacao-titulo">{{ classificacao.tipo }}</div>
+        <div class="classificacao-percentual">{{ classificacao.percentual }}%</div>
+      </div>
+
       <div class="estatisticas-grid">
         <div class="stat-card aptos">
           <h3>Total de Aptos a Votar</h3>
@@ -196,6 +203,56 @@ const estatisticas = computed(() => {
   }
 
   return stats
+})
+
+const classificacao = computed(() => {
+  const result = {
+    tipo: '',
+    percentual: 0
+  }
+
+  if (!propostaSelecionada.value) {
+    return result
+  }
+
+  const totalAptos = estatisticas.value.total_aptos
+  const votosSim = estatisticas.value.sim
+
+  if (totalAptos === 0) {
+    return result
+  }
+
+  // Calcular percentual baseado no total de aptos a votar
+  const percentual = (votosSim / totalAptos) * 100
+
+  // Classificar o resultado
+  if (percentual > 75) {
+    result.tipo = 'Ampla Maioria'
+  } else if (percentual > 50) {
+    result.tipo = 'Maioria'
+  } else {
+    result.tipo = 'Minoria'
+  }
+
+  result.percentual = Math.round(percentual * 100) / 100 // Arredondar para 2 casas decimais
+
+  return result
+})
+
+const classificacaoClass = computed(() => {
+  const tipo = classificacao.value.tipo
+  if (tipo === 'Ampla Maioria') return 'ampla-maioria'
+  if (tipo === 'Maioria') return 'maioria'
+  if (tipo === 'Minoria') return 'minoria'
+  return ''
+})
+
+const classificacaoIcone = computed(() => {
+  const tipo = classificacao.value.tipo
+  if (tipo === 'Ampla Maioria') return '🏆'
+  if (tipo === 'Maioria') return '👍'
+  if (tipo === 'Minoria') return '📊'
+  return '📊'
 })
 
 onMounted(async () => {
@@ -661,5 +718,50 @@ th {
   font-weight: 600;
   color: #1351b4;
   border-bottom: 1px solid #e9ecef;
+}
+
+/* Classificação da votação */
+.classificacao-card {
+  text-align: center;
+  padding: 2.5rem;
+  margin: 2rem 0;
+  border-radius: 12px;
+  border: 3px solid;
+  background: white;
+}
+
+.classificacao-icone {
+  font-size: 4rem;
+  margin-bottom: 0.5rem;
+}
+
+.classificacao-titulo {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.classificacao-percentual {
+  font-size: 2.5rem;
+  font-weight: bold;
+  opacity: 0.9;
+}
+
+.classificacao-card.ampla-maioria {
+  background: #d3f9d8;
+  border-color: #2b8a3e;
+  color: #2b8a3e;
+}
+
+.classificacao-card.maioria {
+  background: #e7f5ff;
+  border-color: #1351b4;
+  color: #1351b4;
+}
+
+.classificacao-card.minoria {
+  background: #fff4e6;
+  border-color: #f59f00;
+  color: #f59f00;
 }
 </style>
