@@ -109,6 +109,21 @@
           </div>
 
           <div class="form-group">
+            <label for="cpf">CPF</label>
+            <input
+              v-model="formulario.cpf_votante"
+              @input="aplicarMascaraCPFFormulario"
+              type="text"
+              id="cpf"
+              required
+              placeholder="000.000.000-00"
+              maxlength="14"
+              :readonly="cpfVotante !== ''"
+              :class="{ 'campo-readonly': cpfVotante !== '' }"
+            />
+          </div>
+
+          <div class="form-group">
             <div class="botoes-voto">
               <button
                 type="button"
@@ -213,6 +228,17 @@ function aplicarMascaraCPFModal(event: Event): void {
   cpfModal.value = (event.target as HTMLInputElement).value
 }
 
+function aplicarMascaraCPFFormulario(event: Event): void {
+  aplicarMascara(event)
+  formulario.value.cpf_votante = (event.target as HTMLInputElement).value
+}
+
+function preencherCPFFormulario(cpf: string): void {
+  // Formata o CPF para exibição
+  const cpfFormatado = cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+  formulario.value.cpf_votante = cpfFormatado
+}
+
 function validarESalvarCPF(): void {
   erroCPF.value = ''
   validandoCPF.value = true
@@ -229,6 +255,9 @@ function validarESalvarCPF(): void {
   salvarCPFLocalStorage(cpfLimpo)
   cpfVotante.value = cpfLimpo
 
+  // Preenche o campo do formulário
+  preencherCPFFormulario(cpfLimpo)
+
   // Fecha a modal
   mostrarModalCPF.value = false
   validandoCPF.value = false
@@ -238,6 +267,7 @@ function verificarCPF(): void {
   const cpfSalvo = recuperarCPFLocalStorage()
   if (cpfSalvo) {
     cpfVotante.value = cpfSalvo
+    preencherCPFFormulario(cpfSalvo)
     mostrarModalCPF.value = false
   } else {
     mostrarModalCPF.value = true
@@ -251,6 +281,7 @@ watch(() => proposta.value?.id, (novoId, antigoId) => {
     const cpfSalvo = recuperarCPFLocalStorage()
     if (cpfSalvo) {
       cpfVotante.value = cpfSalvo
+      preencherCPFFormulario(cpfSalvo)
     }
   }
 })
@@ -351,7 +382,7 @@ async function enviarVoto() {
   try {
     await api.post('/votar', {
       ...formulario.value,
-      cpf_votante: cpfVotante.value, // Usar CPF do localStorage
+      cpf_votante: removerFormatacaoCPF(formulario.value.cpf_votante), // Remove formatação antes de enviar
       proposta_id: proposta.value.id
     })
 
@@ -359,9 +390,10 @@ async function enviarVoto() {
     mensagemTipo.value = 'sucesso'
 
     // Limpar formulário (mas manter CPF)
+    const cpfAtual = formulario.value.cpf_votante
     formulario.value = {
       bancada_id: null,
-      cpf_votante: cpfVotante.value,
+      cpf_votante: cpfAtual,
       nome_votante: '',
       nome_sindicato: '',
       voto: null
@@ -447,6 +479,12 @@ function formatarTempo(segundos: number): string {
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 1rem;
+}
+
+.form-group input[type="text"].campo-readonly {
+  background: #f5f5f5;
+  cursor: not-allowed;
+  color: #666;
 }
 
 .select-bancada {
