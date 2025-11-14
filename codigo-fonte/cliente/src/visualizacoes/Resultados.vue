@@ -39,11 +39,6 @@
             <h3>Votos Sim</h3>
             <p class="numero">{{ resultados.votos_sim || 0 }}</p>
           </div>
-
-          <div class="stat-card total-votos">
-            <h3>Total de Votos Registrados</h3>
-            <p class="numero">{{ totalVotos || 0 }}</p>
-          </div>
         </div>
 
         <div class="voltar">
