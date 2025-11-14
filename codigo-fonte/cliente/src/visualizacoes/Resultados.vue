@@ -37,8 +37,13 @@
           </div>
 
           <div class="stat-card sim">
-            <h3>Votos Sim</h3>
+            <h3>Sim</h3>
             <p class="numero">{{ resultados.votos_sim || 0 }}</p>
+          </div>
+
+          <div class="stat-card total-votos">
+            <h3>Total de Votos</h3>
+            <p class="numero">{{ totalVotos || 0 }}</p>
           </div>
         </div>
 
@@ -228,7 +233,18 @@ onMounted(async () => {
   font-size: 3rem;
   font-weight: bold;
   margin: 0;
+}
+
+.stat-card.aptos .numero {
   color: #1351b4;
+}
+
+.stat-card.sim .numero {
+  color: #2b8a3e;
+}
+
+.stat-card.total-votos .numero {
+  color: #666;
 }
 
 .loading, .error {

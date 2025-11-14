@@ -73,18 +73,18 @@
       </div>
 
       <div class="estatisticas-grid">
+        <div class="stat-card aptos">
+          <h3>Total de Aptos a Votar</h3>
+          <p class="numero">{{ estatisticas.total_aptos || 0 }}</p>
+        </div>
+
         <div class="stat-card sim">
           <h3>Sim</h3>
           <p class="numero">{{ estatisticas.sim || 0 }}</p>
         </div>
 
-        <div class="stat-card nao">
-          <h3>Não</h3>
-          <p class="numero">{{ estatisticas.nao || 0 }}</p>
-        </div>
-
         <div class="stat-card total">
-          <h3>Total</h3>
+          <h3>Total de Votos</h3>
           <p class="numero">{{ estatisticas.total || 0 }}</p>
         </div>
       </div>
@@ -172,8 +172,8 @@ const propostaSelecionada = computed(() => {
 
 const estatisticas = computed(() => {
   const stats = {
+    total_aptos: 0,
     sim: 0,
-    nao: 0,
     total: 0
   }
 
@@ -183,11 +183,17 @@ const estatisticas = computed(() => {
 
     if (votoNormalizado) {
       stats.sim++
-    } else {
-      stats.nao++
     }
     stats.total++
   })
+
+  // Calcular total de aptos baseado no limite_votantes da proposta selecionada
+  if (propostaSelecionada.value && propostaSelecionada.value.limite_votantes) {
+    stats.total_aptos = propostaSelecionada.value.limite_votantes
+  } else {
+    // Se não houver limite ou proposta selecionada, total de aptos = total de votos
+    stats.total_aptos = stats.total
+  }
 
   return stats
 })
@@ -472,30 +478,43 @@ async function sair() {
   text-align: center;
 }
 
+.stat-card.aptos {
+  background: #e7f5ff;
+  border: 2px solid #1351b4;
+}
+
 .stat-card.sim {
   background: #d3f9d8;
   border: 2px solid #2b8a3e;
 }
 
-.stat-card.nao {
-  background: #ffe3e3;
-  border: 2px solid #c92a2a;
-}
-
 .stat-card.total {
-  background: #e7f5ff;
-  border: 2px solid #1351b4;
+  background: #f8f9fa;
+  border: 2px solid #666;
 }
 
 .stat-card h3 {
   margin: 0 0 1rem 0;
   font-size: 1.2rem;
+  color: #333;
 }
 
 .stat-card .numero {
   font-size: 3rem;
   font-weight: bold;
   margin: 0;
+}
+
+.stat-card.aptos .numero {
+  color: #1351b4;
+}
+
+.stat-card.sim .numero {
+  color: #2b8a3e;
+}
+
+.stat-card.total .numero {
+  color: #666;
 }
 
 .tabela-container {
