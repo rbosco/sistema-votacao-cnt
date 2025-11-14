@@ -98,7 +98,7 @@ class Proposta extends Model
             return false;
         }
 
-        $fim = $this->temporizador_inicio->addMinutes($this->temporizador_duracao_minutos);
+        $fim = $this->temporizador_inicio->copy()->addMinutes($this->temporizador_duracao_minutos);
         return now()->lessThan($fim);
     }
 
@@ -111,8 +111,8 @@ class Proposta extends Model
             return 0;
         }
 
-        $fim = $this->temporizador_inicio->addMinutes($this->temporizador_duracao_minutos);
-        return now()->diffInSeconds($fim, false);
+        $fim = $this->temporizador_inicio->copy()->addMinutes($this->temporizador_duracao_minutos);
+        return max(0, now()->diffInSeconds($fim, false));
     }
 
     /**
