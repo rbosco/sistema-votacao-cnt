@@ -226,7 +226,9 @@ const classificacao = computed(() => {
   const percentual = (votosSim / totalAptos) * 100
 
   // Classificar o resultado
-  if (percentual > 75) {
+  if (percentual === 100) {
+    result.tipo = 'Consenso'
+  } else if (percentual >= 75) {
     result.tipo = 'Ampla Maioria'
   } else if (percentual > 50) {
     result.tipo = 'Maioria'
@@ -241,6 +243,7 @@ const classificacao = computed(() => {
 
 const classificacaoClass = computed(() => {
   const tipo = classificacao.value.tipo
+  if (tipo === 'Consenso') return 'consenso'
   if (tipo === 'Ampla Maioria') return 'ampla-maioria'
   if (tipo === 'Maioria') return 'maioria'
   if (tipo === 'Minoria') return 'minoria'
@@ -249,6 +252,7 @@ const classificacaoClass = computed(() => {
 
 const classificacaoIcone = computed(() => {
   const tipo = classificacao.value.tipo
+  if (tipo === 'Consenso') return '✨'
   if (tipo === 'Ampla Maioria') return '🏆'
   if (tipo === 'Maioria') return '👍'
   if (tipo === 'Minoria') return '📊'
@@ -745,6 +749,12 @@ th {
   font-size: 2.5rem;
   font-weight: bold;
   opacity: 0.9;
+}
+
+.classificacao-card.consenso {
+  background: #f3e5f5;
+  border-color: #9c27b0;
+  color: #9c27b0;
 }
 
 .classificacao-card.ampla-maioria {

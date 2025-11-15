@@ -146,35 +146,6 @@ class PropostaController extends Controller
             $proposta = Proposta::findOrFail($id);
             \Log::info('Proposta encontrada', ['proposta' => $proposta->toArray()]);
 
-            // Verificar se está tentando ativar uma proposta "em_votacao" quando já existe outra ativa "em_votacao"
-            if ($request->has('esta_ativa') && $request->esta_ativa &&
-                $request->status === 'em_votacao') {
-                $outraEmVotacao = Proposta::where('id', '!=', $id)
-                    ->where('esta_ativa', true)
-                    ->where('status', 'em_votacao')
-                    ->exists();
-
-                if ($outraEmVotacao) {
-                    return response()->json([
-                        'message' => 'Não é possível ativar esta proposta com status "Em Votação". Já existe outra proposta ativa em votação. Altere o status para "Não Iniciada" ou "Encerrada".'
-                    ], 422);
-                }
-            }
-
-            // Verificar se está tentando alterar o status para "em_votacao" de uma proposta ativa quando já existe outra
-            if ($request->has('status') && $request->status === 'em_votacao' && $proposta->esta_ativa) {
-                $outraEmVotacao = Proposta::where('id', '!=', $id)
-                    ->where('esta_ativa', true)
-                    ->where('status', 'em_votacao')
-                    ->exists();
-
-                if ($outraEmVotacao) {
-                    return response()->json([
-                        'message' => 'Não é possível alterar o status para "Em Votação". Já existe outra proposta ativa em votação.'
-                    ], 422);
-                }
-            }
-
             // Se a proposta está sendo marcada como ativa
             if ($request->has('esta_ativa') && $request->esta_ativa) {
                 \Log::info('Ativando proposta', ['proposta_id' => $id]);
@@ -191,7 +162,7 @@ class PropostaController extends Controller
                         'nome' => $request->nome,
                         'esta_ativa' => true,
                         'status' => $request->status ?? $proposta->status,
-                        'limite_votantes' => $request->limite_votantes,
+                        'limite_votantes' => $request->limite_votantes ?? $proposta->limite_votantes,
                         'temporizador_ativo' => $request->temporizador_ativo ?? $proposta->temporizador_ativo,
                         'temporizador_duracao_minutos' => $request->temporizador_duracao_minutos ?? $proposta->temporizador_duracao_minutos,
                     ]);
@@ -248,20 +219,6 @@ class PropostaController extends Controller
             ]);
 
             $proposta = Proposta::findOrFail($id);
-
-            // Verificar se está tentando alterar para "em_votacao" quando a proposta está ativa e já existe outra
-            if ($request->status === 'em_votacao' && $proposta->esta_ativa) {
-                $outraEmVotacao = Proposta::where('id', '!=', $id)
-                    ->where('esta_ativa', true)
-                    ->where('status', 'em_votacao')
-                    ->exists();
-
-                if ($outraEmVotacao) {
-                    return response()->json([
-                        'message' => 'Não é possível alterar o status para "Em Votação". Já existe outra proposta ativa em votação.'
-                    ], 422);
-                }
-            }
 
             $proposta->update(['status' => $request->status]);
 
@@ -337,7 +294,9 @@ class PropostaController extends Controller
 
             // Classificar o resultado
             $classificacao = '';
-            if ($percentual > 75) {
+            if ($percentual == 100) {
+                $classificacao = 'Consenso';
+            } elseif ($percentual >= 75) {
                 $classificacao = 'Ampla Maioria';
             } elseif ($percentual > 50) {
                 $classificacao = 'Maioria';

@@ -75,6 +75,7 @@ const bannerUrl = computed(() => {
 
 const classificacaoClass = computed(() => {
   const classificacao = resultados.value.classificacao
+  if (classificacao === 'Consenso') return 'consenso'
   if (classificacao === 'Ampla Maioria') return 'ampla-maioria'
   if (classificacao === 'Maioria') return 'maioria'
   if (classificacao === 'Minoria') return 'minoria'
@@ -83,6 +84,7 @@ const classificacaoClass = computed(() => {
 
 const classificacaoIcone = computed(() => {
   const classificacao = resultados.value.classificacao
+  if (classificacao === 'Consenso') return '✨'
   if (classificacao === 'Ampla Maioria') return '🏆'
   if (classificacao === 'Maioria') return '👍'
   if (classificacao === 'Minoria') return '📊'
@@ -173,6 +175,12 @@ onMounted(async () => {
   font-size: 2.5rem;
   font-weight: bold;
   opacity: 0.9;
+}
+
+.classificacao-card.consenso {
+  background: #f3e5f5;
+  border-color: #9c27b0;
+  color: #9c27b0;
 }
 
 .classificacao-card.ampla-maioria {
