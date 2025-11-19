@@ -400,10 +400,11 @@ async function enviarVoto() {
     mensagem.value = 'Voto registrado com sucesso!'
     mensagemTipo.value = 'sucesso'
 
-    // Limpar formulário (mas manter CPF)
+    // Limpar formulário (mas manter CPF e bancada)
     const cpfAtual = formulario.value.cpf_votante
+    const bancadaAtual = formulario.value.bancada_id
     formulario.value = {
-      bancada_id: null,
+      bancada_id: bancadaAtual,
       cpf_votante: cpfAtual,
       nome_votante: '',
       nome_sindicato: '',
