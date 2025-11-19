@@ -283,6 +283,9 @@ watch(() => proposta.value?.id, (novoId, antigoId) => {
       cpfVotante.value = cpfSalvo
       preencherCPFFormulario(cpfSalvo)
     }
+
+    // Limpar mensagens quando proposta mudar
+    mensagem.value = ''
   }
 })
 
